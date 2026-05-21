@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import ModuleList from "./components/ModuleList";
 import InputPanel from "./components/InputPanel";
 import OutputPanel from "./components/OutputPanel";
@@ -6,6 +6,7 @@ import SettingsModal from "./components/SettingsModal";
 import type { ModuleConfig } from "./modules/moduleConfig";
 import { generate } from "./api/client";
 import type { GenerateResult, LLMConfig } from "./api/client";
+import { getStoredTheme, applyTheme } from "./themes/themes";
 import "./App.css";
 
 const STORAGE_KEY = "ai-philosophy-llm-config";
@@ -27,6 +28,12 @@ const App: React.FC = () => {
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // 启动时加载主题
+  useEffect(() => {
+    const themeId = getStoredTheme();
+    applyTheme(themeId);
+  }, []);
 
   const handleSelectModule = useCallback((config: ModuleConfig) => {
     setSelectedModule(config);

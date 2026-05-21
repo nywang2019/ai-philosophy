@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import type { LLMConfig } from "../api/client";
 import PromptEditor from "./PromptEditor";
+import ThemePanel from "./ThemePanel";
+import OutputPrefsPanel from "./OutputPrefsPanel";
 
 interface Props {
   visible: boolean;
@@ -17,6 +19,8 @@ interface SettingsPanel {
 const panels: SettingsPanel[] = [
   { key: "api", label: "API配置" },
   { key: "prompts", label: "提示词模板" },
+  { key: "theme", label: "系统主题" },
+  { key: "output", label: "输出偏好" },
 ];
 
 const STORAGE_KEY = "ai-philosophy-llm-config";
@@ -130,6 +134,8 @@ const SettingsModal: React.FC<Props> = ({ visible, onClose, onSave }) => {
               <ApiConfigPanel onSave={onSave} onClose={onClose} />
             )}
             {activePanel === "prompts" && <PromptEditor />}
+            {activePanel === "theme" && <ThemePanel />}
+            {activePanel === "output" && <OutputPrefsPanel />}
           </div>
         </div>
       </div>

@@ -69,3 +69,64 @@
 
 ### 下一步建议
 1. 后续如需新增设置面板（如系统主题、输出格式偏好等），只需在 panels 数组中添加一项并在 settings-content 中添加对应渲染
+
+---
+
+## 2026-05-21 - 系统主题 + 输出格式偏好
+
+### 修改文件
+- `frontend/src/themes/themes.ts` - 新建主题系统，Apple/Tesla/Anthropic 三套预设，CSS变量注入
+- `frontend/src/components/ThemePanel.tsx` - 新建主题选择面板（预览卡片 + 即时切换）
+- `frontend/src/components/OutputPrefsPanel.tsx` - 新建输出偏好面板（默认显示格式、生成详细度）
+- `frontend/src/components/SettingsModal.tsx` - 新增"系统主题"和"输出偏好"两个面板
+- `frontend/src/App.tsx` - 启动时加载已保存主题
+- `frontend/src/components/OutputPanel.tsx` - 使用存储的默认显示格式偏好
+- `frontend/src/App.css` - 全部硬编码颜色替换为CSS变量，新增主题卡片、radio组件样式
+
+### 修改内容
+1. 主题系统：Apple（浅色清爽）、Tesla（深色科技）、Anthropic（米色人文）三套预设
+2. 主题切换即时生效，所有页面元素同步切换，选择持久化到 localStorage
+3. 输出偏好：默认显示格式（JSON/Markdown）、生成详细度（简洁/标准/详细）
+4. 偏好更改自动保存，OutputPanel启动时读取默认视图偏好
+5. 设置导航栏从2项扩展为4项，后续可继续新增
+
+### 风险
+- 无
+
+### 未完成项
+- 生成详细度偏好暂存前端，未接入LLM提示词（预留后续接入）
+
+### 下一步建议
+1. 将详细度偏好注入到提示词中，实际影响LLM输出
+2. 可新增"自定义主题"功能，允许用户自定义CSS变量
+
+---
+
+## 2026-05-21 - 输出展示高级感升级
+
+### 修改文件
+- `frontend/src/components/ResultRenderer.tsx` - 新建模块感知的富渲染引擎，6种渲染模式
+- `frontend/src/components/OutputPanel.tsx` - 新增"预览"视图模式（默认），三模式切换
+- `frontend/src/App.css` - 新增 ~500 行 premium 样式（对话气泡、时间线、卡片、SWOT网格等）
+
+### 修改内容
+1. 新增"预览"视图为默认展示模式，根据模块类型自动选择渲染方式：
+   - 对话类 → 彩色头像 + 聊天气泡 + 类型标签 + 总结卡片
+   - 多层版本类 → 2列版本卡片 + 原文高亮 + 版本图标
+   - 时间线类 → 垂直时间轴 + 节点卡片 + 分支对比（典故/反事实）
+   - 分析报告类 → 结构化段落 + 情绪曲线柱状图 + 标签芯片 + 改写卡片
+   - 商业分析类 → 公司头像 + 产品网格 + SWOT 2x2 四象限
+   - 转换类 → Era标签卡片 + 元数据列表
+   - 通用 fallback → 结构化键值对 + 嵌套缩进
+2. JSON/Markdown 保留为辅助视图（"预览" | "JSON" | "MD" 三按钮切换）
+3. 全部渲染带 fadeIn 动画、微妙 hover 效果、统一间距体系
+
+### 风险
+- 新增模块时需要更新 ResultRenderer 的路由逻辑，否则会 fallback 到通用渲染
+
+### 未完成项
+- 无
+
+### 下一步建议
+1. 可为对话类添加打字机动画效果
+2. 情绪曲线可升级为 SVG/Canvas 真实图表

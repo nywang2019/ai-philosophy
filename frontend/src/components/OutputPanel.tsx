@@ -1,5 +1,8 @@
 import { useState } from "react";
 import type { GenerateResult } from "../api/client";
+import ResultRenderer from "./ResultRenderer";
+
+type ViewMode = "preview" | "json" | "markdown";
 
 interface Props {
   result: GenerateResult | null;
@@ -8,7 +11,7 @@ interface Props {
 }
 
 const OutputPanel: React.FC<Props> = ({ result, error, loading }) => {
-  const [viewMode, setViewMode] = useState<"json" | "markdown">("json");
+  const [viewMode, setViewMode] = useState<ViewMode>("preview");
 
   if (loading) {
     return (
@@ -87,6 +90,12 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading }) => {
         <span className="output-duration">耗时: {result.duration}ms</span>
         <div className="output-toggle">
           <button
+            className={viewMode === "preview" ? "active" : ""}
+            onClick={() => setViewMode("preview")}
+          >
+            预览
+          </button>
+          <button
             className={viewMode === "json" ? "active" : ""}
             onClick={() => setViewMode("json")}
           >
@@ -96,12 +105,14 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading }) => {
             className={viewMode === "markdown" ? "active" : ""}
             onClick={() => setViewMode("markdown")}
           >
-            Markdown
+            MD
           </button>
         </div>
       </div>
       <div className="output-content">
-        {viewMode === "json" ? renderJSON() : renderMarkdown()}
+        {viewMode === "preview" && <ResultRenderer result={result} />}
+        {viewMode === "json" && renderJSON()}
+        {viewMode === "markdown" && renderMarkdown()}
       </div>
     </div>
   );
