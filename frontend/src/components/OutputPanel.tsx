@@ -12,6 +12,26 @@ interface Props {
 
 const OutputPanel: React.FC<Props> = ({ result, error, loading }) => {
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
+
+  const handleShare = async () => {
+    if (!result) return;
+    const text = JSON.stringify(result.result, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareMsg("已复制到剪贴板");
+    } catch {
+      // fallback
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setShareMsg("已复制到剪贴板");
+    }
+    setTimeout(() => setShareMsg(null), 2000);
+  };
 
   if (loading) {
     return (
@@ -108,6 +128,10 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading }) => {
             MD
           </button>
         </div>
+        <button className="btn-share" onClick={handleShare}>
+          分享
+        </button>
+        {shareMsg && <span className="share-msg">{shareMsg}</span>}
       </div>
       <div className="output-content">
         {viewMode === "preview" && <ResultRenderer result={result} />}

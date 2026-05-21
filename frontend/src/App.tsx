@@ -3,9 +3,13 @@ import ModuleList from "./components/ModuleList";
 import InputPanel from "./components/InputPanel";
 import OutputPanel from "./components/OutputPanel";
 import SettingsModal from "./components/SettingsModal";
+import HistoryPanel from "./components/HistoryPanel";
 import type { ModuleConfig } from "./modules/moduleConfig";
+import { moduleConfigs } from "./modules/moduleConfig";
 import { generate } from "./api/client";
 import type { GenerateResult, LLMConfig } from "./api/client";
+import { addHistory } from "./services/historyStore";
+import type { HistoryEntry } from "./services/historyStore";
 import { getStoredTheme, applyTheme } from "./themes/themes";
 import "./App.css";
 
@@ -25,6 +29,8 @@ const App: React.FC = () => {
   const [selectedModule, setSelectedModule] = useState<ModuleConfig | null>(null);
   const [llmConfig, setLlmConfig] = useState<LLMConfig | null>(loadConfig());
   const [settingsVisible, setSettingsVisible] = useState(!loadConfig());
+  const [historyVisible, setHistoryVisible] = useState(false);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,6 +62,15 @@ const App: React.FC = () => {
           llmConfig,
         });
         setResult(res);
+        // 自动保存到历史
+        addHistory(
+          selectedModule.moduleId,
+          selectedModule.moduleName,
+          inputs,
+          res.result,
+          llmConfig
+        );
+        setHistoryRefreshKey((k) => k + 1);
       } catch (err) {
         setError(err instanceof Error ? err.message : "未知错误");
       } finally {
@@ -69,6 +84,22 @@ const App: React.FC = () => {
     setLlmConfig(config);
   }, []);
 
+  // 从历史加载对话
+  const handleHistorySelect = useCallback(
+    (entry: HistoryEntry) => {
+      const mod = moduleConfigs.find((m) => m.moduleId === entry.moduleId);
+      if (mod) setSelectedModule(mod);
+      setResult({
+        moduleId: entry.moduleId,
+        moduleName: entry.moduleName,
+        result: entry.result,
+        duration: 0,
+      });
+      setError(null);
+    },
+    []
+  );
+
   return (
     <div className="app">
       <header className="app-header">
@@ -79,6 +110,12 @@ const App: React.FC = () => {
               {llmConfig.model}
             </span>
           )}
+          <button
+            className="btn-settings"
+            onClick={() => setHistoryVisible(true)}
+          >
+            历史
+          </button>
           <button
             className="btn-settings"
             onClick={() => setSettingsVisible(true)}
@@ -109,6 +146,12 @@ const App: React.FC = () => {
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
         onSave={handleSaveConfig}
+      />
+      <HistoryPanel
+        visible={historyVisible}
+        onClose={() => setHistoryVisible(false)}
+        onSelect={handleHistorySelect}
+        refreshKey={historyRefreshKey}
       />
     </div>
   );

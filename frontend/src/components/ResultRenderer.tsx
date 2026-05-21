@@ -1,8 +1,54 @@
+import { useState, useEffect, useRef } from "react";
 import type { GenerateResult } from "../api/client";
 
 interface Props {
   result: GenerateResult;
 }
+
+// ===== 工具函数 =====
+
+// 基于名称的一致性哈希颜色
+const AVATAR_COLORS = [
+  "#4a6cf7", "#e82127", "#389e0d", "#c75a2c",
+  "#7c3aed", "#0891b2", "#d97706", "#db2777",
+];
+
+function hashColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+// ===== 打字机文本组件 =====
+const TypewriterText: React.FC<{
+  text: string;
+  speed: number;
+  onComplete: () => void;
+}> = ({ text, speed, onComplete }) => {
+  const [displayed, setDisplayed] = useState("");
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    setDisplayed("");
+    indexRef.current = 0;
+  }, [text]);
+
+  useEffect(() => {
+    if (indexRef.current >= text.length) {
+      onComplete();
+      return;
+    }
+    const timer = setTimeout(() => {
+      indexRef.current++;
+      setDisplayed(text.slice(0, indexRef.current));
+    }, speed);
+    return () => clearTimeout(timer);
+  }, [displayed, text, speed, onComplete]);
+
+  return <span>{displayed}</span>;
+};
 
 // ===== 对话气泡渲染 =====
 const ChatBubbles: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
@@ -10,10 +56,29 @@ const ChatBubbles: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
   const summary = data.summary as string;
   const tensionPoints = data.tensionPoints as string[];
 
-  const colors = [
-    "#4a6cf7", "#e82127", "#389e0d", "#c75a2c",
-    "#7c3aed", "#0891b2", "#d97706", "#db2777",
-  ];
+  // 当前正在打字的对话索引，-1 表示全部完成
+  const [typingIndex, setTypingIndex] = useState(0);
+  // 当前对话是否完成打字
+  const [currentDone, setCurrentDone] = useState(false);
+
+  const handleCurrentDone = () => setCurrentDone(true);
+
+  // 当前对话打字完成后，推进到下一条
+  useEffect(() => {
+    if (currentDone && typingIndex < dialogues.length - 1) {
+      const timer = setTimeout(() => {
+        setTypingIndex((i) => i + 1);
+        setCurrentDone(false);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [currentDone, typingIndex, dialogues.length]);
+
+  // 数据变化时重置
+  useEffect(() => {
+    setTypingIndex(0);
+    setCurrentDone(false);
+  }, [data]);
 
   return (
     <div className="rr-chat">
@@ -21,10 +86,14 @@ const ChatBubbles: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
         const speaker = d.speaker || d.character || "";
         const content = d.content || d.line || "";
         const type = (d.type as string) || "";
-        const color = colors[i % colors.length];
+        const color = hashColor(speaker);
+        const isVisible = i <= typingIndex;
+        const isTyping = i === typingIndex && !currentDone;
+
+        if (!isVisible) return null;
 
         return (
-          <div key={i} className="rr-chat-msg">
+          <div key={i} className={`rr-chat-msg ${isVisible ? "rr-chat-visible" : ""}`}>
             <div className="rr-chat-avatar" style={{ background: color }}>
               {speaker.slice(0, 2)}
             </div>
@@ -33,26 +102,41 @@ const ChatBubbles: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
                 {speaker}
                 {type && <span className="rr-chat-type">{type}</span>}
               </div>
-              <div className="rr-chat-content">{content}</div>
+              <div className="rr-chat-content">
+                {isTyping ? (
+                  <TypewriterText
+                    text={content}
+                    speed={35}
+                    onComplete={handleCurrentDone}
+                  />
+                ) : (
+                  content
+                )}
+                {isTyping && <span className="rr-cursor">|</span>}
+              </div>
             </div>
           </div>
         );
       })}
-      {summary && (
-        <div className="rr-chat-summary">
-          <div className="rr-label">总结</div>
-          <p>{summary}</p>
-        </div>
-      )}
-      {tensionPoints && tensionPoints.length > 0 && (
-        <div className="rr-tension">
-          <div className="rr-label">文学张力点</div>
-          <ul>
-            {tensionPoints.map((tp, i) => (
-              <li key={i}>{tp}</li>
-            ))}
-          </ul>
-        </div>
+      {typingIndex >= dialogues.length - 1 && currentDone && (
+        <>
+          {summary && (
+            <div className="rr-chat-summary">
+              <div className="rr-label">总结</div>
+              <p>{summary}</p>
+            </div>
+          )}
+          {tensionPoints && tensionPoints.length > 0 && (
+            <div className="rr-tension">
+              <div className="rr-label">文学张力点</div>
+              <ul>
+                {tensionPoints.map((tp, i) => (
+                  <li key={i}>{tp}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
