@@ -261,14 +261,12 @@ const RecentActivity: React.FC<{ sessions: Analytics["recentSessions"]; onSelect
         <div key={s.id} className="dash-activity-item dash-activity-clickable" onClick={() => onSelect?.(s)}>
           <div className="dash-activity-left">
             <div className="dash-activity-dot" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
-            <div>
-              <div className="dash-activity-title">
-                {s.pinned && "📌 "}{s.title}
-              </div>
-              <div className="dash-activity-meta">
-                {s.moduleName}
-              </div>
-            </div>
+            <span className="dash-activity-title">
+              {s.pinned && "📌 "}{s.title}
+            </span>
+            <span className="dash-activity-meta">
+              {s.moduleName}
+            </span>
           </div>
           <div className="dash-activity-time">
             {new Date(s.timestamp).toLocaleString("zh-CN", {
@@ -466,15 +464,49 @@ const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void }> =
             ? `基于 ${stats.totalSessions} 次会话数据的统计分析`
             : "暂无数据，开始使用系统后将自动生成统计"}
         </span>
-        {stats.totalSessions > 0 && (
-          <button
-            className="dash-insight-btn"
-            onClick={handleGenerateInsight}
-            disabled={insightLoading}
-          >
-            {insightLoading ? "分析中..." : "🔮 AI洞察"}
-          </button>
-        )}
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          {stats.totalSessions > 0 && (
+            <button
+              className="dash-insight-btn"
+              onClick={handleGenerateInsight}
+              disabled={insightLoading}
+            >
+              {insightLoading ? "分析中..." : "🔮 AI洞察"}
+            </button>
+          )}
+          {stats.totalSessions > 0 && (
+            <button
+              className="dash-insight-btn"
+              style={{ background: "linear-gradient(135deg, #389e0d, #4caf50)" }}
+              onClick={() => {
+                const top3 = stats.moduleStats.filter(m => m.count > 0).slice(0, 3).map(m => `${m.moduleName}(${m.count}次)`).join("、");
+                const html = `<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8"><title>文史哲AI系统统计报告</title><style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;padding:20px;line-height:1.8;color:#1d1d1f}h1{font-size:22px;border-bottom:2px solid #4a6cf7;padding-bottom:8px}h2{font-size:16px;margin-top:24px;color:#555}table{width:100%;border-collapse:collapse;margin:12px 0}td{padding:8px 12px;border-bottom:1px solid #eee}td:first-child{font-weight:600;width:140px}.tag{display:inline-block;padding:2px 10px;background:#eef2ff;color:#4a6cf7;border-radius:10px;font-size:11px;margin:2px}.card{background:#f7f7f7;border-radius:10px;padding:16px;margin:12px 0}</style></head><body>
+<h1>文史哲AI系统 · 统计报告</h1><p style="color:#888">导出时间：${new Date().toLocaleString("zh-CN")}</p>
+<div class="card"><h2>概览</h2><table>
+<tr><td>总会话数</td><td>${stats.totalSessions}</td><td>今日会话</td><td>${stats.todaySessions}</td></tr>
+<tr><td>日均使用</td><td>${stats.averagePerDay}次/天</td><td>最长连续</td><td>${stats.longestStreak}天</td></tr>
+<tr><td>收藏率</td><td>${stats.favoriteRate}% (${stats.favoriteSessions}个)</td><td>置顶率</td><td>${stats.pinRate}% (${stats.pinnedSessions}个)</td></tr>
+<tr><td>总生成量</td><td>${(stats.totalWordsGenerated/1000).toFixed(1)}k字</td><td>平均输入</td><td>${stats.averageInputLen}字</td></tr>
+<tr><td>本周会话</td><td>${stats.thisWeekCount}次 (上周${stats.lastWeekCount}次)</td><td>活跃时段</td><td>${stats.mostActiveHour}:00</td></tr>
+<tr><td>存储占用</td><td>${(stats.storageBytes/1024).toFixed(1)}KB</td><td>周趋势</td><td>${stats.weeklyTrend > 0 ? "+" : ""}${stats.weeklyTrend}%</td></tr>
+</table></div>
+<div class="card"><h2>模块分布</h2><table>${stats.moduleStats.filter(m=>m.count>0).map(m=>`<tr><td>${m.moduleName}</td><td>${m.count}次 (${Math.round(m.percentage)}%)</td><td>收藏${m.favoriteCount}个</td></tr>`).join("")}</table></div>
+<div class="card"><h2>最爱模块</h2><p>${top3}</p></div>
+<div class="card"><h2>标签分布</h2><p>${stats.tagStats.map(t=>`<span class="tag">${t.tag} ${t.count}次</span>`).join(" ")}</p></div>
+<div class="card"><h2>高频主题词</h2><p>${stats.titleWords.map(w=>`<span class="tag">${w.word}(${w.count})</span>`).join(" ")}</p></div>
+<p style="font-size:11px;color:#999;text-align:center;margin-top:24px">由文史哲AI生成系统导出</p>
+</body></html>`;
+                const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = `文史哲AI统计报告-${new Date().toISOString().slice(0,10)}.html`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              }}
+            >
+              📄 导出报告
+            </button>
+          )}
+        </div>
         {insight && (
           <div className="dash-insight-box">{insight}</div>
         )}

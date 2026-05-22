@@ -103,7 +103,7 @@ body {
 /* ===== Sidebar ===== */
 
 .sidebar {
-  width: 260px;
+  width: 290px;
   background: var(--surface);
   border-right: 1px solid var(--border);
   overflow-y: auto;
@@ -147,6 +147,63 @@ body {
 .module-icon {
   font-size: 15px;
   flex-shrink: 0;
+}
+
+.module-try-btn {
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: auto;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.module-try-btn:hover {
+  opacity: 1;
+  background: var(--active-bg);
+}
+
+.module-tips-btn {
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--input-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.module-tips-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.module-tips-pop {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--active-bg);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  animation: fadeIn 0.2s ease;
+}
+
+.module-tips-pop-title {
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--primary);
+  margin-bottom: 4px;
 }
 
 .module-item-desc {
@@ -269,6 +326,37 @@ body {
   border-color: #e82127;
   color: #fff;
   animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* ===== Suggest chips (textarea下方) ===== */
+
+.suggest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.suggest-chip {
+  font-size: 11px;
+  padding: 3px 10px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+  white-space: nowrap;
+  max-width: calc(50% - 12px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.suggest-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--active-bg);
 }
 
 @keyframes pulse {
@@ -594,7 +682,7 @@ body {
 
 @media (max-width: 1200px) {
   .sidebar {
-    width: 200px;
+    width: 240px;
   }
 }
 
@@ -688,7 +776,7 @@ body {
 }
 
 .prompt-editor-sidebar {
-  width: 150px;
+  width: 175px;
   background: var(--hover);
   border-right: 1px solid var(--light-border);
   overflow-y: auto;
@@ -2683,6 +2771,8 @@ body {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .dash-activity-dot {
@@ -2699,18 +2789,23 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 280px;
+  max-width: 240px;
+  display: inline;
 }
 
 .dash-activity-meta {
   font-size: 11px;
   color: var(--muted);
+  display: inline;
+  margin-left: 8px;
+  white-space: nowrap;
 }
 
 .dash-activity-time {
   font-size: 11px;
   color: var(--muted);
   flex-shrink: 0;
+  margin-left: 8px;
 }
 
 /* ===== Custom Module Panel ===== */

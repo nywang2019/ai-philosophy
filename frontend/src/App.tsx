@@ -40,16 +40,30 @@ const App: React.FC = () => {
   const [secondResult, setSecondResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [exampleValues, setExampleValues] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     const themeId = getStoredTheme();
     applyTheme(themeId);
+
+    // 加载分享链接
+    const hash = window.location.hash;
+    if (hash.startsWith("#share=")) {
+      try {
+        const encoded = hash.slice(7);
+        const payload = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+        if (payload.m && payload.d) {
+          setResult({ moduleId: "shared", moduleName: payload.m, result: payload.d, duration: 0 });
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      } catch { /* ignore */ }
+    }
   }, []);
 
   const handleSelectModule = useCallback(
     (config: ModuleConfig) => {
+      setExampleValues(null);
       if (compareMode) {
-        // 对比模式：第一次点击设为主模块，再点击其他模块设为第二模块
         if (!selectedModule) {
           setSelectedModule(config);
         } else if (config.moduleId !== selectedModule.moduleId) {
@@ -67,6 +81,15 @@ const App: React.FC = () => {
     },
     [compareMode, selectedModule]
   );
+
+  const handleTryExample = useCallback((config: ModuleConfig) => {
+    setSelectedModule(config);
+    setSecondModule(null);
+    setResult(null);
+    setSecondResult(null);
+    setError(null);
+    setExampleValues(config.example || null);
+  }, []);
 
   const toggleCompare = useCallback(() => {
     setCompareMode((prev) => {
@@ -240,6 +263,7 @@ const App: React.FC = () => {
               selectedId={selectedModule?.moduleId || null}
               secondSelectedId={compareMode ? secondModule?.moduleId || null : null}
               onSelect={handleSelectModule}
+              onTryExample={handleTryExample}
             />
           </aside>
           <main className="main-content">
@@ -250,6 +274,7 @@ const App: React.FC = () => {
               onToggleCompare={toggleCompare}
               onSubmit={handleSubmit}
               loading={loading}
+              initialValues={exampleValues}
             />
           </main>
           {/* 输出区：对比模式分上下，普通模式单栏 */}
@@ -280,7 +305,10 @@ const App: React.FC = () => {
       <HistoryPanel
         visible={historyVisible}
         onClose={() => setHistoryVisible(false)}
-        onSelect={handleHistorySelect}
+        onSelect={(entry) => {
+          handleHistorySelect(entry);
+          setDashboardVisible(false);
+        }}
         onRegenerate={handleRegenerate}
         refreshKey={historyRefreshKey}
       />

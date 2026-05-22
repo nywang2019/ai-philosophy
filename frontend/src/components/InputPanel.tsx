@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ModuleConfig, ModuleField } from "../modules/moduleConfig";
 import WelcomeAnimation from "./WelcomeAnimation";
 import VoiceInput from "./VoiceInput";
@@ -10,6 +10,7 @@ interface Props {
   onToggleCompare: () => void;
   onSubmit: (inputs: Record<string, unknown>) => void;
   loading: boolean;
+  initialValues?: Record<string, unknown> | null;
 }
 
 const TagInput: React.FC<{
@@ -38,15 +39,39 @@ const TagInput: React.FC<{
         {tags.map((tag, i) => (
           <span key={i} className="tag">{tag}<button type="button" onClick={() => removeTag(i)}>&times;</button></span>
         ))}
-        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={field.placeholder} />
+        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={field.placeholder} list={`suggest-${field.key}`} />
+        {field.suggestions && field.suggestions.length > 0 && (
+          <datalist id={`suggest-${field.key}`}>
+            {field.suggestions.map((s) => <option key={s} value={s} />)}
+          </datalist>
+        )}
       </div>
     </div>
   );
 };
 
-const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onToggleCompare, onSubmit, loading }) => {
+const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onToggleCompare, onSubmit, loading, initialValues }) => {
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [tagValues, setTagValues] = useState<Record<string, string[]>>({});
+
+  // 接收初始示例值
+  useEffect(() => {
+    if (initialValues && config) {
+      const v: Record<string, unknown> = {};
+      const tv: Record<string, string[]> = {};
+      for (const field of config.fields) {
+        const val = initialValues[field.key];
+        if (field.type === "tag-input" && Array.isArray(val)) {
+          tv[field.key] = val as string[];
+          v[field.key] = val;
+        } else if (val !== undefined) {
+          v[field.key] = val;
+        }
+      }
+      setValues(v);
+      setTagValues(tv);
+    }
+  }, [initialValues, config]);
 
   if (!config) {
     return (
@@ -109,6 +134,16 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
               <textarea value={(values[field.key] as string) || ""} onChange={(e) => handleChange(field.key, e.target.value)} placeholder={field.placeholder} rows={4} />
               <VoiceInput onResult={(text) => handleChange(field.key, ((values[field.key] as string) || "") + text)} />
             </div>
+            {field.suggestions && field.suggestions.length > 0 && (
+              <div className="suggest-chips">
+                {field.suggestions.slice(0, 15).map((s) => {
+                  const short = s.length > 10 ? s.slice(0, 10) + "…" : s;
+                  return (
+                    <span key={s} className="suggest-chip" onClick={() => handleChange(field.key, s)} title={s}>{short}</span>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       default:
@@ -116,7 +151,12 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
           <div className="input-field" key={field.key}>
             <label>{field.label}</label>
             <div className="input-with-voice">
-              <input type="text" value={(values[field.key] as string) || ""} onChange={(e) => handleChange(field.key, e.target.value)} placeholder={field.placeholder} />
+              <input type="text" value={(values[field.key] as string) || ""} onChange={(e) => handleChange(field.key, e.target.value)} placeholder={field.placeholder} list={`suggest-${field.key}`} />
+              {field.suggestions && field.suggestions.length > 0 && (
+                <datalist id={`suggest-${field.key}`}>
+                  {field.suggestions.map((s) => <option key={s} value={s} />)}
+                </datalist>
+              )}
               <VoiceInput onResult={(text) => handleChange(field.key, ((values[field.key] as string) || "") + text)} />
             </div>
           </div>
