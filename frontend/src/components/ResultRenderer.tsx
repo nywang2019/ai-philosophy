@@ -150,6 +150,7 @@ const MultiVersion: React.FC<{ data: Record<string, unknown> }> = ({ data }) => 
   if (data.modernTranslation) versions.push({ label: "现代白话", content: data.modernTranslation as string, icon: "白" });
   if (data.videoScript) versions.push({ label: "短视频口播", content: data.videoScript as string, icon: "播" });
   if (data.socialMedia) versions.push({ label: "社交媒体", content: data.socialMedia as string, icon: "社" });
+  if (data.campusMeme) versions.push({ label: "校园热梗", content: data.campusMeme as string, icon: "梗" });
   if (data.childVersion) versions.push({ label: "儿童版", content: data.childVersion as string, icon: "童" });
   if (data.dailyVersion) versions.push({ label: "日常生活版", content: data.dailyVersion as string, icon: "常" });
   if (data.academicVersion) versions.push({ label: "学术版", content: data.academicVersion as string, icon: "学" });
@@ -316,10 +317,9 @@ const AnalysisReport: React.FC<{ data: Record<string, unknown> }> = ({ data }) =
                   <div className="rr-emotion-pos">{ec.position}</div>
                   <div className="rr-emotion-bar-wrap">
                     <div
-                      className={`rr-emotion-bar ${ec.value > 0 ? "positive" : "negative"}`}
+                      className={`rr-emotion-bar ${ec.value >= 0 ? "positive" : "negative"}`}
                       style={{
-                        width: `${Math.abs(ec.value) * 10}%`,
-                        marginLeft: ec.value < 0 ? `${50 - Math.abs(ec.value) * 10}%` : "50%",
+                        width: `${Math.min(Math.abs(ec.value) / 5 * 100, 100)}%`,
                       }}
                     />
                   </div>

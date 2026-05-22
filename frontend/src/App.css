@@ -1336,11 +1336,11 @@ body {
 }
 
 .rr-emotion-bar.positive {
-  background: var(--primary);
+  background: #e82127;
 }
 
 .rr-emotion-bar.negative {
-  background: var(--error-text);
+  background: #389e0d;
 }
 
 .rr-emotion-val {
