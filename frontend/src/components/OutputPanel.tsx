@@ -11,6 +11,7 @@ interface Props {
   loading: boolean;
   onHistorySelect?: (entry: HistoryEntry) => void;
   onBackToHome?: () => void;
+  onOpenHistory?: () => void;
 }
 
 const WelcomeSidebar: React.FC<{ onSelect?: (entry: HistoryEntry) => void }> = ({ onSelect }) => {
@@ -50,7 +51,7 @@ const WelcomeSidebar: React.FC<{ onSelect?: (entry: HistoryEntry) => void }> = (
   );
 };
 
-const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome }) => {
+const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome, onOpenHistory }) => {
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
@@ -185,16 +186,68 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
     return lines.join("\n");
   };
 
-  const renderMarkdown = () => (
-    <div className="output-markdown">{toMarkdown(result.result)}</div>
-  );
+  const renderMarkdown = () => {
+    const mdToHtml = (md: string): string => {
+      const lines = md.split("\n");
+      let html = "";
+      let inList = false;
+      for (const line of lines) {
+        // 标题
+        const hMatch = line.match(/^(#{1,4})\s+(.+)/);
+        if (hMatch) {
+          if (inList) { html += "</ul>"; inList = false; }
+          const level = hMatch[1].length;
+          html += `<h${level} class="md-h">${escapeHtml(hMatch[2])}</h${level}>`;
+          continue;
+        }
+        // 列表
+        const liMatch = line.match(/^-\s+(.+)/);
+        if (liMatch) {
+          if (!inList) { html += "<ul class='md-ul'>"; inList = true; }
+          html += `<li class="md-li">${processInline(liMatch[1])}</li>`;
+          continue;
+        }
+        // 空行
+        if (line.trim() === "") {
+          if (inList) { html += "</ul>"; inList = false; }
+          continue;
+        }
+        // 普通段落
+        if (inList) { html += "</ul>"; inList = false; }
+        html += `<p class="md-p">${processInline(line)}</p>`;
+      }
+      if (inList) html += "</ul>";
+      return html;
+    };
+
+    const processInline = (text: string): string => {
+      return escapeHtml(text)
+        .replace(/\*\*(.+?)\*\*/g, "<strong class='md-strong'>$1</strong>")
+        .replace(/`(.+?)`/g, "<code class='md-code'>$1</code>");
+    };
+
+    const escapeHtml = (s: string): string =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    return (
+      <div
+        className="output-markdown output-markdown-rendered"
+        dangerouslySetInnerHTML={{ __html: mdToHtml(toMarkdown(result.result)) }}
+      />
+    );
+  };
 
   return (
     <div className="output-panel">
       <div className="output-header">
         {onBackToHome && (
           <button className="btn-back-home" onClick={onBackToHome} title="返回主页">
-            &larr;
+            &#8962;
+          </button>
+        )}
+        {onOpenHistory && (
+          <button className="btn-back-home btn-back-history" onClick={onOpenHistory} title="对话历史">
+            &#9776;
           </button>
         )}
         <span className="output-title">{result.moduleName}</span>

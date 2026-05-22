@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ModuleConfig, ModuleField } from "../modules/moduleConfig";
 import WelcomeAnimation from "./WelcomeAnimation";
+import VoiceInput from "./VoiceInput";
 
 interface Props {
   config: ModuleConfig | null;
@@ -104,14 +105,20 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
         return (
           <div className="input-field" key={field.key}>
             <label>{field.label}</label>
-            <textarea value={(values[field.key] as string) || ""} onChange={(e) => handleChange(field.key, e.target.value)} placeholder={field.placeholder} rows={4} />
+            <div className="input-with-voice">
+              <textarea value={(values[field.key] as string) || ""} onChange={(e) => handleChange(field.key, e.target.value)} placeholder={field.placeholder} rows={4} />
+              <VoiceInput onResult={(text) => handleChange(field.key, ((values[field.key] as string) || "") + text)} />
+            </div>
           </div>
         );
       default:
         return (
           <div className="input-field" key={field.key}>
             <label>{field.label}</label>
-            <input type="text" value={(values[field.key] as string) || ""} onChange={(e) => handleChange(field.key, e.target.value)} placeholder={field.placeholder} />
+            <div className="input-with-voice">
+              <input type="text" value={(values[field.key] as string) || ""} onChange={(e) => handleChange(field.key, e.target.value)} placeholder={field.placeholder} />
+              <VoiceInput onResult={(text) => handleChange(field.key, ((values[field.key] as string) || "") + text)} />
+            </div>
           </div>
         );
     }

@@ -106,6 +106,19 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
     load();
   };
 
+  const tagColors: [string, string][] = [
+    ["#eef2ff", "#4a6cf7"], ["#fef3c7", "#b45309"], ["#f0fdf4", "#166534"],
+    ["#fef2f2", "#b91c1c"], ["#f5f3ff", "#6d28d9"], ["#f0f9ff", "#0369a1"],
+    ["#fdf2f8", "#be185d"], ["#ecfdf5", "#047857"], ["#fff7ed", "#c2410c"],
+  ];
+
+  const getTagStyle = (tag: string) => {
+    let hash = 0;
+    for (let i = 0; i < tag.length; i++) hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+    const [bg, fg] = tagColors[Math.abs(hash) % tagColors.length];
+    return { background: bg, color: fg };
+  };
+
   const handleAddCustomTag = (entry: HistoryEntry) => {
     const name = prompt("输入新标签名称：");
     if (name && name.trim()) {
@@ -243,7 +256,7 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
                     {(entry.tags || []).length > 0 && (
                       <div className="history-item-tags">
                         {entry.tags!.map((t) => (
-                          <span key={t} className="history-tag">{t}</span>
+                          <span key={t} className="history-tag" style={getTagStyle(t)}>{t}</span>
                         ))}
                       </div>
                     )}
@@ -252,7 +265,7 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
               </div>
               <div className="history-item-actions">
                 {/* 标签菜单 */}
-                <div className="history-tag-menu-wrap">
+                <div className="history-tag-menu-wrap" onMouseLeave={() => setTagMenuId(null)}>
                   <button
                     className="history-action-btn"
                     title="标签"

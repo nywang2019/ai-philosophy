@@ -52,7 +52,10 @@ const TypewriterText: React.FC<{
 
 // ===== 对话气泡渲染 =====
 const ChatBubbles: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
-  const dialogues = (data.dialogues as Array<Record<string, string>>) || [];
+  const dialogues = data.dialogues as Array<Record<string, string>> | undefined;
+  if (!Array.isArray(dialogues) || dialogues.length === 0) {
+    return <GenericStructured data={data} />;
+  }
   const summary = data.summary as string;
   const tensionPoints = data.tensionPoints as string[];
 
@@ -181,18 +184,15 @@ const MultiVersion: React.FC<{ data: Record<string, unknown> }> = ({ data }) => 
 
 // ===== 时间线渲染 =====
 const TimelineView: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
-  const eras = data.eras as Array<Record<string, string>>;
-  const branches = data.branches as Array<{
-    name: string;
-    timeline: Array<{ year: string; event: string }>;
-  }>;
+  const eras = data.eras as Array<Record<string, string>> | undefined;
+  const branches = data.branches as Array<{ name: string; timeline: Array<{ year: string; event: string }> }> | undefined;
   const originalHistory = data.originalHistory as string;
   const idiom = data.idiom as string;
   const originalEvent = data.originalEvent as string;
   const changedVariable = data.changedVariable as string;
 
   // 典故时间穿越
-  if (eras) {
+  if (Array.isArray(eras) && eras.length > 0) {
     return (
       <div className="rr-timeline">
         <div className="rr-original">
@@ -229,8 +229,7 @@ const TimelineView: React.FC<{ data: Record<string, unknown> }> = ({ data }) => 
     );
   }
 
-  // 历史反事实
-  if (branches) {
+  if (Array.isArray(branches) && branches.length > 0) {
     const branchColors = ["#4a6cf7", "#e82127", "#c75a2c"];
     const branchIcons = ["●", "▲", "◆"];
     return (
@@ -269,7 +268,7 @@ const TimelineView: React.FC<{ data: Record<string, unknown> }> = ({ data }) => 
     );
   }
 
-  return null;
+  return <GenericStructured data={data} />;
 };
 
 // ===== 分析报告渲染 =====
@@ -399,8 +398,8 @@ const AnalysisReport: React.FC<{ data: Record<string, unknown> }> = ({ data }) =
 
 // ===== 商业分析渲染 =====
 const BusinessProfile: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
-  const swot = data.swot as Record<string, string[]>;
-  const products = data.products as string[];
+  const swot = data.swot as Record<string, string[]> | undefined;
+  const products = data.products as string[] | undefined;
   const companyName = data.companyName as string;
   const coreConcept = data.coreConcept as string;
   const organization = data.organization as string;
@@ -481,13 +480,12 @@ const BusinessProfile: React.FC<{ data: Record<string, unknown> }> = ({ data }) 
 
 // ===== 转换结果渲染 =====
 const ConversionView: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
-  const conversions = data.conversions as Array<{
-    era: string;
-    text: string;
-    vocabularyChanges: string[];
-    toneChange: string;
-  }>;
+  const conversions = data.conversions as Array<Record<string, unknown>> | undefined;
   const original = data.original as string;
+
+  if (!Array.isArray(conversions) || conversions.length === 0) {
+    return <GenericStructured data={data} />;
+  }
 
   return (
     <div className="rr-conversion">
@@ -498,20 +496,20 @@ const ConversionView: React.FC<{ data: Record<string, unknown> }> = ({ data }) =
         </div>
       )}
       <div className="rr-conversion-grid">
-        {conversions?.map((conv, i) => (
+        {conversions.map((conv, i) => (
           <div key={i} className="rr-conversion-card">
-            <div className="rr-conversion-era">{conv.era}</div>
-            <p className="rr-conversion-text">{conv.text}</p>
-            {conv.vocabularyChanges && (
+            <div className="rr-conversion-era">{conv.era as string || ""}</div>
+            <p className="rr-conversion-text">{conv.text as string || ""}</p>
+            {!!conv.vocabularyChanges && (
               <div className="rr-conversion-meta">
                 <span className="rr-field-label">词汇变化</span>
-                <span>{conv.vocabularyChanges.join("、")}</span>
+                <span>{Array.isArray(conv.vocabularyChanges) ? (conv.vocabularyChanges as string[]).join("、") : String(conv.vocabularyChanges)}</span>
               </div>
             )}
-            {conv.toneChange && (
+            {!!conv.toneChange && (
               <div className="rr-conversion-meta">
                 <span className="rr-field-label">语气变化</span>
-                <span>{conv.toneChange}</span>
+                <span>{conv.toneChange as string}</span>
               </div>
             )}
           </div>
@@ -625,6 +623,17 @@ const ResultRenderer: React.FC<Props> = ({ result }) => {
 
   // 检测数据类型，决定渲染器
   const detectRenderer = (): React.ReactNode => {
+    // 空数据兜底
+    if (!d || Object.keys(d).length === 0) {
+      return (
+        <div className="rr-generic">
+          <div className="rr-generic-section">
+            <p className="rr-original-text">暂无内容可显示。该结果可能为空或生成时出错。</p>
+          </div>
+        </div>
+      );
+    }
+
     // 已知模块
     if (moduleId === "philosopher_chat" || moduleId === "literary_chat") {
       return <ChatBubbles data={d} />;
@@ -643,6 +652,11 @@ const ResultRenderer: React.FC<Props> = ({ result }) => {
     }
     if (moduleId === "era_filter") {
       return <ConversionView data={d} />;
+    }
+
+    // 纯文本兜底（LLM未返回JSON时后端包成 {raw: "..."})
+    if (Object.keys(d).length === 1 && "raw" in d && typeof d.raw === "string") {
+      return <div className="rr-generic"><div className="rr-generic-section"><p className="rr-original-text" style={{ whiteSpace: "pre-wrap" }}>{d.raw as string}</p></div></div>;
     }
 
     // 自定义模块：根据输出结构自动匹配渲染器

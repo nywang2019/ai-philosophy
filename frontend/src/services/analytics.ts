@@ -12,6 +12,13 @@ export interface ModuleStats {
   avgOutputSize: number;
   pinnedCount: number;
   pinRate: number;
+  favoriteCount: number;
+  favoriteRate: number;
+}
+
+export interface TitleWord {
+  word: string;
+  count: number;
 }
 
 export interface DailyStats {
@@ -41,9 +48,12 @@ export interface Analytics {
   todaySessions: number;
   pinnedSessions: number;
   pinRate: number;
+  favoriteSessions: number;
+  favoriteRate: number;
   topModule: ModuleStats | null;
   moduleStats: ModuleStats[];
   dailyStats: DailyStats[];
+  movingAverage7d: number[];
   recentSessions: HistoryEntry[];
   averagePerDay: number;
   mostActiveHour: number;
@@ -51,10 +61,16 @@ export interface Analytics {
   weekdayStats: WeekdayStats[];
   tagStats: TagStats[];
   totalWordsGenerated: number;
+  totalInputChars: number;
+  averageInputLen: number;
+  thisWeekCount: number;
+  lastWeekCount: number;
+  weeklyTrend: number;
   oldestSession: number | null;
   newestSession: number | null;
   longestStreak: number;
   storageBytes: number;
+  titleWords: TitleWord[];
 }
 
 function countWords(result: Record<string, unknown>): number {
@@ -90,6 +106,10 @@ export function computeAnalytics(): Analytics {
   const pinnedSessions = all.filter((e) => e.pinned).length;
   const pinRate = totalSessions > 0 ? Math.round((pinnedSessions / totalSessions) * 100) : 0;
 
+  // 收藏统计
+  const favoriteSessions = all.filter((e) => e.favorite).length;
+  const favoriteRate = totalSessions > 0 ? Math.round((favoriteSessions / totalSessions) * 100) : 0;
+
   // 合并内置模块和自定义模块
   const allModuleConfigs: ModuleConfig[] = [
     ...moduleConfigs,
@@ -104,12 +124,13 @@ export function computeAnalytics(): Analytics {
   ];
 
   // 模块统计（含平均输出量和 pin 率）
-  const moduleMap: Record<string, { count: number; totalSize: number; pins: number }> = {};
+  const moduleMap: Record<string, { count: number; totalSize: number; pins: number; favs: number }> = {};
   for (const e of all) {
-    if (!moduleMap[e.moduleId]) moduleMap[e.moduleId] = { count: 0, totalSize: 0, pins: 0 };
+    if (!moduleMap[e.moduleId]) moduleMap[e.moduleId] = { count: 0, totalSize: 0, pins: 0, favs: 0 };
     moduleMap[e.moduleId].count++;
     moduleMap[e.moduleId].totalSize += countWords(e.result);
     if (e.pinned) moduleMap[e.moduleId].pins++;
+    if (e.favorite) moduleMap[e.moduleId].favs++;
   }
   const moduleStats: ModuleStats[] = allModuleConfigs
     .map((m) => {
@@ -122,6 +143,8 @@ export function computeAnalytics(): Analytics {
         avgOutputSize: d.count > 0 ? Math.round(d.totalSize / d.count) : 0,
         pinnedCount: d.pins,
         pinRate: d.count > 0 ? Math.round((d.pins / d.count) * 100) : 0,
+        favoriteCount: d.favs,
+        favoriteRate: d.count > 0 ? Math.round((d.favs / d.count) * 100) : 0,
       };
     })
     .sort((a, b) => b.count - a.count);
@@ -138,6 +161,8 @@ export function computeAnalytics(): Analytics {
         avgOutputSize: d.count > 0 ? Math.round(d.totalSize / d.count) : 0,
         pinnedCount: d.pins,
         pinRate: d.count > 0 ? Math.round((d.pins / d.count) * 100) : 0,
+        favoriteCount: d.favs,
+        favoriteRate: d.count > 0 ? Math.round((d.favs / d.count) * 100) : 0,
       });
     }
   }
@@ -231,6 +256,56 @@ export function computeAnalytics(): Analytics {
     }))
     .sort((a, b) => b.count - a.count);
 
+  // 输入统计
+  const totalInputChars = all.reduce((sum, e) => sum + JSON.stringify(e.inputs).length, 0);
+  const averageInputLen = totalSessions > 0 ? Math.round(totalInputChars / totalSessions) : 0;
+
+  // 本周 vs 上周对比
+  const nowD = new Date();
+  const dayOfWeek = nowD.getDay();
+  const thisWeekStart = getDayStart(nowD.getTime() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) * 86400000);
+  const lastWeekStart = thisWeekStart - 7 * 86400000;
+  const thisWeekCount = all.filter((e) => {
+    const t = e.timestamp;
+    return t >= thisWeekStart && t < thisWeekStart + 7 * 86400000;
+  }).length;
+  const lastWeekCount = all.filter((e) => {
+    const t = e.timestamp;
+    return t >= lastWeekStart && t < thisWeekStart;
+  }).length;
+  const weeklyTrend = lastWeekCount > 0
+    ? Math.round(((thisWeekCount - lastWeekCount) / lastWeekCount) * 100)
+    : (thisWeekCount > 0 ? 100 : 0);
+
+  // 7天移动平均（基于30天dailyStats）
+  const movingAverage7d: number[] = dailyStats.map((_, i) => {
+    const start = Math.max(0, i - 3);
+    const end = Math.min(dailyStats.length, i + 4);
+    let sum = 0;
+    for (let j = start; j < end; j++) sum += dailyStats[j].count;
+    return Math.round((sum / (end - start)) * 10) / 10;
+  });
+
+  // 标题高频词（从历史标题提取2-4字词）
+  const wordMap: Record<string, number> = {};
+  const stopWords = new Set(["的","了","在","是","我","有","和","就","不","人","都","一","个","上","也","很","到","说","要","去","你","会","着","没有","看","好","自己","这","他","她","它","们","那","些","什么","怎么","如何","怎么","为什么","因为","所以","但是","如果","可以","已经","还","又","再","才","刚","就","只","被","把","从","让","对","与","或","等","及","其","为"]);
+  for (const e of all) {
+    const title = e.title;
+    for (let len = 2; len <= 4; len++) {
+      for (let i = 0; i <= title.length - len; i++) {
+        const w = title.slice(i, i + len);
+        if ([...w].every((c) => !stopWords.has(c) && /[一-龥]/.test(c))) {
+          wordMap[w] = (wordMap[w] || 0) + 1;
+        }
+      }
+    }
+  }
+  const titleWords: TitleWord[] = Object.entries(wordMap)
+    .filter(([, c]) => c >= 2)
+    .map(([word, count]) => ({ word, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15);
+
   // 总生成量 + 存储占用
   const totalWordsGenerated = all.reduce((sum, e) => sum + countWords(e.result), 0);
   let storageBytes = 0;
@@ -246,9 +321,12 @@ export function computeAnalytics(): Analytics {
     todaySessions,
     pinnedSessions,
     pinRate,
+    favoriteSessions,
+    favoriteRate,
     topModule,
     moduleStats,
     dailyStats,
+    movingAverage7d,
     recentSessions,
     averagePerDay,
     mostActiveHour,
@@ -256,9 +334,15 @@ export function computeAnalytics(): Analytics {
     weekdayStats,
     tagStats,
     totalWordsGenerated,
+    totalInputChars,
+    averageInputLen,
+    thisWeekCount,
+    lastWeekCount,
+    weeklyTrend,
     oldestSession: oldest,
     newestSession: newest,
     longestStreak,
     storageBytes,
+    titleWords,
   };
 }

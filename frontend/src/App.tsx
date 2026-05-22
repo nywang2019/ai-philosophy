@@ -156,7 +156,15 @@ const App: React.FC = () => {
       fields: custom.fields,
       _isCustom: true,
     };
-    return undefined;
+    // 模块已删除：构造虚拟配置以正常展示
+    return {
+      moduleId,
+      moduleName: moduleId,
+      icon: "📦",
+      description: "已删除的模块",
+      fields: [],
+      _isCustom: true,
+    };
   }, []);
 
   const handleHistorySelect = useCallback(
@@ -223,7 +231,7 @@ const App: React.FC = () => {
       {dashboardVisible ? (
         <div className="dashboard-wrapper">
           <button className="dash-back-btn" onClick={() => setDashboardVisible(false)}>&larr; 返回主界面</button>
-          <Dashboard />
+          <Dashboard onHistorySelect={(entry) => { handleHistorySelect(entry); setDashboardVisible(false); }} />
         </div>
       ) : (
         <div className="app-body">
@@ -249,17 +257,17 @@ const App: React.FC = () => {
             <aside className="output-sidebar output-compare">
               <div className="output-compare-half">
                 <div className="output-compare-label">{selectedModule?.moduleName}</div>
-                <OutputPanel result={result} error={null} loading={false} onBackToHome={handleBackToHome} />
+                <OutputPanel result={result} error={null} loading={false} onBackToHome={handleBackToHome} onOpenHistory={() => setHistoryVisible(true)} />
               </div>
               <div className="output-compare-divider" />
               <div className="output-compare-half">
                 <div className="output-compare-label">{secondModule?.moduleName}</div>
-                <OutputPanel result={secondResult} error={null} loading={false} onBackToHome={handleBackToHome} />
+                <OutputPanel result={secondResult} error={null} loading={false} onBackToHome={handleBackToHome} onOpenHistory={() => setHistoryVisible(true)} />
               </div>
             </aside>
           ) : (
             <aside className="output-sidebar">
-              <OutputPanel result={result} error={error} loading={loading} onHistorySelect={handleHistorySelect} onBackToHome={handleBackToHome} />
+              <OutputPanel result={result} error={error} loading={loading} onHistorySelect={handleHistorySelect} onBackToHome={handleBackToHome} onOpenHistory={() => setHistoryVisible(true)} />
             </aside>
           )}
         </div>

@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { computeAnalytics, type ModuleStats, type DailyStats, type Analytics } from "../services/analytics";
 import type { HistoryEntry } from "../services/historyStore";
+import { generate, type LLMConfig } from "../api/client";
 
 // ===== 配色 =====
 const CHART_COLORS = [
@@ -14,11 +15,17 @@ const StatCard: React.FC<{
   value: string | number;
   sub?: string;
   color?: string;
-}> = ({ label, value, sub, color }) => (
+  trend?: number;
+}> = ({ label, value, sub, color, trend }) => (
   <div className="dash-stat-card">
     <div className="dash-stat-label">{label}</div>
     <div className="dash-stat-value" style={color ? { color } : {}}>
       {value}
+      {trend !== undefined && trend !== 0 && (
+        <span className={`dash-trend ${trend > 0 ? "up" : "down"}`}>
+          {trend > 0 ? "↑" : "↓"}{Math.abs(trend)}%
+        </span>
+      )}
     </div>
     {sub && <div className="dash-stat-sub">{sub}</div>}
   </div>
@@ -84,35 +91,33 @@ const BarChart: React.FC<{ data: ModuleStats[] }> = ({ data }) => {
   );
 };
 
-// ===== SVG 折线图（30天趋势） =====
-const LineChart: React.FC<{ data: DailyStats[] }> = ({ data }) => {
+// ===== SVG 折线图（30天趋势 + 7日移动平均） =====
+const LineChart: React.FC<{ data: DailyStats[]; movingAvg?: number[] }> = ({ data, movingAvg }) => {
   const W = 520;
   const H = 180;
   const pad = { t: 16, r: 16, b: 30, l: 32 };
   const cw = W - pad.l - pad.r;
   const ch = H - pad.t - pad.b;
 
-  const maxVal = Math.max(...data.map((d) => d.count), 1);
+  const maxVal = Math.max(...data.map((d) => d.count), ...(movingAvg || []), 1);
   const yFor = (v: number) => pad.t + ch - (v / maxVal) * ch;
 
-  const pts = data
-    .map((d, i) => {
-      const x = pad.l + (i / Math.max(data.length - 1, 1)) * cw;
-      const y = yFor(d.count);
-      return `${x},${y}`;
-    })
-    .join(" ");
+  const pts = data.map((d, i) => {
+    const x = pad.l + (i / Math.max(data.length - 1, 1)) * cw;
+    return `${x},${yFor(d.count)}`;
+  }).join(" ");
 
   const areaPath = `M${pad.l},${pad.t + ch} L${pts.replace(/(\d+\.?\d*),(\d+\.?\d*)/g, "$1,$2 L")} L${pad.l + cw},${pad.t + ch} Z`;
 
-  // X轴标签（每5天）
+  const maPts = movingAvg ? movingAvg.map((v, i) => {
+    const x = pad.l + (i / Math.max(data.length - 1, 1)) * cw;
+    return `${x},${yFor(v)}`;
+  }).join(" ") : null;
+
   const xLabels: { label: string; x: number }[] = [];
   data.forEach((d, i) => {
     if (i % 5 === 0 || i === data.length - 1) {
-      xLabels.push({
-        label: d.date,
-        x: pad.l + (i / Math.max(data.length - 1, 1)) * cw,
-      });
+      xLabels.push({ label: d.date, x: pad.l + (i / Math.max(data.length - 1, 1)) * cw });
     }
   });
 
@@ -125,45 +130,31 @@ const LineChart: React.FC<{ data: DailyStats[] }> = ({ data }) => {
         </linearGradient>
       </defs>
 
-      {/* Y轴网格 */}
       {[0, 0.5, 1].map((r) => {
         const y = yFor(maxVal * r);
         return (
           <g key={r}>
             <line x1={pad.l} y1={y} x2={pad.l + cw} y2={y} stroke="var(--light-border)" strokeWidth="0.5" strokeDasharray="4 4" />
-            <text x={pad.l - 6} y={y + 4} textAnchor="end" fontSize="10" fill="var(--muted)">
-              {Math.round(maxVal * r)}
-            </text>
+            <text x={pad.l - 6} y={y + 4} textAnchor="end" fontSize="10" fill="var(--muted)">{Math.round(maxVal * r)}</text>
           </g>
         );
       })}
 
-      {/* 面积 + 折线 */}
       <path d={areaPath} fill="url(#lineGrad)" />
-      <polyline
-        points={pts}
-        fill="none"
-        stroke={CHART_COLORS[0]}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <polyline points={pts} fill="none" stroke={CHART_COLORS[0]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
-      {/* 数据点 */}
+      {maPts && (
+        <polyline points={maPts} fill="none" stroke={CHART_COLORS[2]} strokeWidth="1.5" strokeDasharray="6 3" strokeLinecap="round" opacity="0.7" />
+      )}
+
       {data.map((d, i) => {
         const x = pad.l + (i / Math.max(data.length - 1, 1)) * cw;
-        const y = yFor(d.count);
         if (d.count === 0) return null;
-        return (
-          <circle key={i} cx={x} cy={y} r="3" fill={CHART_COLORS[0]} opacity="0.9" />
-        );
+        return <circle key={i} cx={x} cy={yFor(d.count)} r="2.5" fill={CHART_COLORS[0]} opacity="0.9" />;
       })}
 
-      {/* X轴标签 */}
       {xLabels.map((l) => (
-        <text key={l.label} x={l.x} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--muted)">
-          {l.label}
-        </text>
+        <text key={l.label} x={l.x} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--muted)">{l.label}</text>
       ))}
     </svg>
   );
@@ -260,14 +251,14 @@ const TagBars: React.FC<{ data: import("../services/analytics").TagStats[] }> = 
 };
 
 // ===== 最近活动 =====
-const RecentActivity: React.FC<{ sessions: Analytics["recentSessions"] }> = ({ sessions }) => {
+const RecentActivity: React.FC<{ sessions: Analytics["recentSessions"]; onSelect?: (entry: HistoryEntry) => void }> = ({ sessions, onSelect }) => {
   if (sessions.length === 0) {
     return <div className="dash-empty">暂无活动记录</div>;
   }
   return (
     <div className="dash-activity">
       {sessions.map((s: HistoryEntry, i: number) => (
-        <div key={s.id} className="dash-activity-item">
+        <div key={s.id} className="dash-activity-item dash-activity-clickable" onClick={() => onSelect?.(s)}>
           <div className="dash-activity-left">
             <div className="dash-activity-dot" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
             <div>
@@ -355,11 +346,116 @@ const WeekdayBars: React.FC<{ data: import("../services/analytics").WeekdayStats
   );
 };
 
+// ===== 词频展示 =====
+const WordCloud: React.FC<{ words: import("../services/analytics").TitleWord[] }> = ({ words }) => {
+  if (words.length === 0) return <div className="dash-empty">暂无数据</div>;
+  const max = words[0]?.count || 1;
+  return (
+    <div className="dash-wordcloud">
+      {words.map((w, i) => {
+        const size = 11 + Math.round((w.count / max) * 9);
+        const opacity = 0.5 + (w.count / max) * 0.5;
+        return (
+          <span
+            key={w.word}
+            className="dash-word"
+            style={{
+              fontSize: size,
+              color: CHART_COLORS[i % CHART_COLORS.length],
+              opacity,
+            }}
+          >
+            {w.word}
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
+// ===== 收藏排行条 =====
+const FavBars: React.FC<{ data: ModuleStats[] }> = ({ data }) => {
+  const favModules = [...data].filter((d) => d.favoriteCount > 0).sort((a, b) => b.favoriteCount - a.favoriteCount).slice(0, 5);
+  if (favModules.length === 0) return <div className="dash-empty">暂无收藏数据</div>;
+  const max = favModules[0].favoriteCount;
+  const W = 420; const H = favModules.length * 30 + 14; const barH = 18; const gap = 10;
+  const labelW = 110; const barStart = labelW + 6; const barMaxW = W - barStart - 50;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} className="dash-chart-svg">
+      {favModules.map((d, i) => {
+        const y = 6 + i * (barH + gap);
+        const w = d.favoriteCount > 0 ? Math.max((d.favoriteCount / max) * barMaxW, 4) : 0;
+        const insideText = w > 40;
+        return (
+          <g key={d.moduleId}>
+            <text x={0} y={y + barH / 2 + 4} textAnchor="start" fontSize="11" fill="var(--text-secondary)">{d.moduleName}</text>
+            {d.favoriteCount > 0 && (
+              <>
+                <rect x={barStart} y={y} width={w} height={barH} rx="4" fill={CHART_COLORS[i % CHART_COLORS.length]} opacity={0.8} />
+                <text
+                  x={insideText ? barStart + w / 2 : barStart + w + 8}
+                  y={y + barH / 2 + 4}
+                  textAnchor={insideText ? "middle" : "start"}
+                  fontSize="10"
+                  fontWeight="700"
+                  fill={insideText ? "#fff" : "var(--text-secondary)"}
+                >
+                  {d.favoriteCount}⭐
+                </text>
+              </>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
 // ===== 主仪表盘 =====
-const Dashboard: React.FC = () => {
+const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void }> = ({ onHistorySelect }) => {
   const stats = useMemo(() => computeAnalytics(), []);
   const hourMax = Math.max(...stats.hourStats.map((h) => h.count), 1);
   const weekdayMax = Math.max(...stats.weekdayStats.map((w) => w.count), 1);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+
+  const loadConfig = (): LLMConfig | null => {
+    try {
+      const s = localStorage.getItem("ai-philosophy-llm-config");
+      if (s) return JSON.parse(s) as LLMConfig;
+    } catch { /* ignore */ }
+    return null;
+  };
+
+  const handleGenerateInsight = async () => {
+    const config = loadConfig();
+    if (!config) {
+      setInsight("⚠️ 请先在设置中配置API信息");
+      return;
+    }
+    setInsightLoading(true);
+    try {
+      const top3 = stats.moduleStats.filter((m) => m.count > 0).slice(0, 3);
+      const prompt = `你是一位数据分析师。请根据以下用户使用数据，写一段80字左右的洞察总结，风格轻松有洞察力，指出最有趣的使用模式并给一个建议。不要客套话直接说发现。
+
+总使用${stats.totalSessions}次，本周${stats.thisWeekCount}次（上周${stats.lastWeekCount}次），收藏${stats.favoriteSessions}个，置顶${stats.pinnedSessions}个。
+最爱模块：${top3.map((m) => `${m.moduleName}(${m.count}次)`).join("、")}。
+活跃时段：${stats.mostActiveHour}点，连续使用最长${stats.longestStreak}天。`;
+      const res = await generate({
+        moduleId: "dashboard-insight",
+        inputs: {},
+        llmConfig: config,
+        customPrompt: prompt,
+      });
+      const text = (res.result as Record<string, unknown>).raw as string || JSON.stringify(res.result);
+      setInsight(text.slice(0, 300));
+    } catch (e) {
+      setInsight("生成洞察失败：" + (e instanceof Error ? e.message : ""));
+    } finally {
+      setInsightLoading(false);
+    }
+  };
 
   return (
     <div className="dashboard">
@@ -370,12 +466,24 @@ const Dashboard: React.FC = () => {
             ? `基于 ${stats.totalSessions} 次会话数据的统计分析`
             : "暂无数据，开始使用系统后将自动生成统计"}
         </span>
+        {stats.totalSessions > 0 && (
+          <button
+            className="dash-insight-btn"
+            onClick={handleGenerateInsight}
+            disabled={insightLoading}
+          >
+            {insightLoading ? "分析中..." : "🔮 AI洞察"}
+          </button>
+        )}
+        {insight && (
+          <div className="dash-insight-box">{insight}</div>
+        )}
       </div>
 
       {/* 统计卡片行 */}
       <div className="dash-cards">
-        <StatCard label="总会话数" value={stats.totalSessions} sub="所有模块累计使用" />
-        <StatCard label="今日会话" value={stats.todaySessions} sub="今天的使用次数" color="#4a6cf7" />
+        <StatCard label="总会话数" value={stats.totalSessions} sub="所有模块累计使用" trend={stats.weeklyTrend} />
+        <StatCard label="今日会话" value={stats.todaySessions} sub={stats.thisWeekCount > 0 ? `本周 ${stats.thisWeekCount} 次 · 上周 ${stats.lastWeekCount} 次` : "今天的使用次数"} color="#4a6cf7" trend={stats.weeklyTrend} />
         <StatCard
           label="最热模块"
           value={stats.topModule ? stats.topModule.moduleName : "—"}
@@ -384,8 +492,10 @@ const Dashboard: React.FC = () => {
         />
         <StatCard label="日均使用" value={stats.averagePerDay} sub="次/天" />
         <StatCard label="最长连续" value={`${stats.longestStreak}天`} sub="连续使用天数" color="#7c3aed" />
+        <StatCard label="收藏率" value={`${stats.favoriteRate}%`} sub={`${stats.favoriteSessions} 个已收藏`} color="#f59e0b" />
         <StatCard label="置顶率" value={`${stats.pinRate}%`} sub={`${stats.pinnedSessions} 个已置顶`} />
         <StatCard label="总生成量" value={`${(stats.totalWordsGenerated / 1000).toFixed(1)}k`} sub="字符数" color="#389e0d" />
+        <StatCard label="平均输入" value={`${stats.averageInputLen}字`} sub={`累计输入 ${(stats.totalInputChars / 1000).toFixed(1)}k 字`} />
         <StatCard label="存储占用" value={`${(stats.storageBytes / 1024).toFixed(1)}KB`} sub="本地数据量" />
       </div>
 
@@ -400,16 +510,16 @@ const Dashboard: React.FC = () => {
           )}
         </div>
         <div className="dash-card">
-          <div className="dash-card-title">使用趋势（近30天）</div>
+          <div className="dash-card-title">使用趋势（近30天 · 虚线=7日平均）</div>
           {stats.totalSessions > 0 ? (
-            <LineChart data={stats.dailyStats} />
+            <LineChart data={stats.dailyStats} movingAvg={stats.movingAverage7d} />
           ) : (
             <div className="dash-empty">暂无数据</div>
           )}
         </div>
       </div>
 
-      {/* 第三行：环形图 + 24h + 每周 */}
+      {/* 第三行：环形图 + 收藏排行 */}
       <div className="dash-charts">
         <div className="dash-card">
           <div className="dash-card-title">模块占比</div>
@@ -420,6 +530,14 @@ const Dashboard: React.FC = () => {
           )}
         </div>
         <div className="dash-card">
+          <div className="dash-card-title">模块收藏排行</div>
+          <FavBars data={stats.moduleStats} />
+        </div>
+      </div>
+
+      {/* 第四行：24h + 每周 */}
+      <div className="dash-charts">
+        <div className="dash-card">
           <div className="dash-card-title">24小时活跃分布</div>
           {stats.totalSessions > 0 ? (
             <HourHeatmap data={stats.hourStats} max={hourMax} />
@@ -427,10 +545,6 @@ const Dashboard: React.FC = () => {
             <div className="dash-empty">暂无数据</div>
           )}
         </div>
-      </div>
-
-      {/* 第四行：每周分布 + 标签统计 */}
-      <div className="dash-charts">
         <div className="dash-card">
           <div className="dash-card-title">每周分布</div>
           {stats.totalSessions > 0 ? (
@@ -439,6 +553,10 @@ const Dashboard: React.FC = () => {
             <div className="dash-empty">暂无数据</div>
           )}
         </div>
+      </div>
+
+      {/* 第五行：标签 + 词频 */}
+      <div className="dash-charts">
         <div className="dash-card">
           <div className="dash-card-title">标签统计</div>
           {stats.tagStats.length > 0 ? (
@@ -447,13 +565,21 @@ const Dashboard: React.FC = () => {
             <div className="dash-empty">暂无标签数据</div>
           )}
         </div>
+        <div className="dash-card">
+          <div className="dash-card-title">高频主题词</div>
+          {stats.titleWords.length > 0 ? (
+            <WordCloud words={stats.titleWords} />
+          ) : (
+            <div className="dash-empty">暂无数据</div>
+          )}
+        </div>
       </div>
 
-      {/* 第五行：最近活动 */}
+      {/* 第六行：最近活动 */}
       <div className="dash-charts">
         <div className="dash-card">
           <div className="dash-card-title">最近活动</div>
-          <RecentActivity sessions={stats.recentSessions} />
+          <RecentActivity sessions={stats.recentSessions} onSelect={onHistorySelect} />
         </div>
       </div>
     </div>
