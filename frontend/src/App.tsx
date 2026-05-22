@@ -4,6 +4,7 @@ import InputPanel from "./components/InputPanel";
 import OutputPanel from "./components/OutputPanel";
 import SettingsModal from "./components/SettingsModal";
 import HistoryPanel from "./components/HistoryPanel";
+import Dashboard from "./components/Dashboard";
 import type { ModuleConfig } from "./modules/moduleConfig";
 import { moduleConfigs } from "./modules/moduleConfig";
 import { generate } from "./api/client";
@@ -30,6 +31,7 @@ const App: React.FC = () => {
   const [llmConfig, setLlmConfig] = useState<LLMConfig | null>(loadConfig());
   const [settingsVisible, setSettingsVisible] = useState(!loadConfig());
   const [historyVisible, setHistoryVisible] = useState(false);
+  const [dashboardVisible, setDashboardVisible] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +114,12 @@ const App: React.FC = () => {
           )}
           <button
             className="btn-settings"
+            onClick={() => setDashboardVisible(true)}
+          >
+            仪表盘
+          </button>
+          <button
+            className="btn-settings"
             onClick={() => setHistoryVisible(true)}
           >
             历史
@@ -124,7 +132,18 @@ const App: React.FC = () => {
           </button>
         </div>
       </header>
-      <div className="app-body">
+      {dashboardVisible ? (
+        <div className="dashboard-wrapper">
+          <button
+            className="dash-back-btn"
+            onClick={() => setDashboardVisible(false)}
+          >
+            &larr; 返回主界面
+          </button>
+          <Dashboard />
+        </div>
+      ) : (
+        <div className="app-body">
         <aside className="sidebar">
           <ModuleList
             selectedId={selectedModule?.moduleId || null}
@@ -142,6 +161,7 @@ const App: React.FC = () => {
           <OutputPanel result={result} error={error} loading={loading} />
         </aside>
       </div>
+      )}
       <SettingsModal
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
