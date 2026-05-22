@@ -231,6 +231,34 @@ const DonutChart: React.FC<{ data: ModuleStats[] }> = ({ data }) => {
   );
 };
 
+// ===== 标签分布条 =====
+const TagBars: React.FC<{ data: import("../services/analytics").TagStats[] }> = ({ data }) => {
+  const max = Math.max(...data.map((d) => d.count), 1);
+  const H = Math.max(data.length * 30 + 16, 60);
+  const W = 360;
+  const barH = 18;
+  const gap = 10;
+  const labelW = 70;
+  const barStart = labelW + 8;
+  const barMaxW = W - barStart - 40;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} className="dash-chart-svg">
+      {data.map((d, i) => {
+        const y = 8 + i * (barH + gap);
+        const w = Math.max((d.count / max) * barMaxW, 4);
+        return (
+          <g key={d.tag}>
+            <text x={0} y={y + barH / 2 + 4} textAnchor="start" fontSize="11" fill="var(--text-secondary)">{d.tag}</text>
+            <rect x={barStart} y={y} width={w} height={barH} rx="4" fill={CHART_COLORS[i % CHART_COLORS.length]} opacity={0.82} />
+            <text x={barStart + w + 6} y={y + barH / 2 + 4} textAnchor="start" fontSize="10" fontWeight="600" fill="var(--muted)">{d.count}次</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
 // ===== 最近活动 =====
 const RecentActivity: React.FC<{ sessions: Analytics["recentSessions"] }> = ({ sessions }) => {
   if (sessions.length === 0) {
@@ -401,7 +429,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 第四行：每周分布 + 最近活动 */}
+      {/* 第四行：每周分布 + 标签统计 */}
       <div className="dash-charts">
         <div className="dash-card">
           <div className="dash-card-title">每周分布</div>
@@ -411,6 +439,18 @@ const Dashboard: React.FC = () => {
             <div className="dash-empty">暂无数据</div>
           )}
         </div>
+        <div className="dash-card">
+          <div className="dash-card-title">标签统计</div>
+          {stats.tagStats.length > 0 ? (
+            <TagBars data={stats.tagStats} />
+          ) : (
+            <div className="dash-empty">暂无标签数据</div>
+          )}
+        </div>
+      </div>
+
+      {/* 第五行：最近活动 */}
+      <div className="dash-charts">
         <div className="dash-card">
           <div className="dash-card-title">最近活动</div>
           <RecentActivity sessions={stats.recentSessions} />

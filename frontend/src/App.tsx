@@ -131,6 +131,15 @@ const App: React.FC = () => {
     [selectedModule, secondModule, compareMode, llmConfig]
   );
 
+  const handleBackToHome = useCallback(() => {
+    setSelectedModule(null);
+    setSecondModule(null);
+    setCompareMode(false);
+    setResult(null);
+    setSecondResult(null);
+    setError(null);
+  }, []);
+
   const handleSaveConfig = useCallback((config: LLMConfig) => {
     setLlmConfig(config);
   }, []);
@@ -142,6 +151,7 @@ const App: React.FC = () => {
     if (custom) return {
       moduleId: custom.moduleId,
       moduleName: custom.moduleName,
+      icon: custom.icon || "📦",
       description: custom.description,
       fields: custom.fields,
       _isCustom: true,
@@ -239,17 +249,17 @@ const App: React.FC = () => {
             <aside className="output-sidebar output-compare">
               <div className="output-compare-half">
                 <div className="output-compare-label">{selectedModule?.moduleName}</div>
-                <OutputPanel result={result} error={null} loading={false} />
+                <OutputPanel result={result} error={null} loading={false} onBackToHome={handleBackToHome} />
               </div>
               <div className="output-compare-divider" />
               <div className="output-compare-half">
                 <div className="output-compare-label">{secondModule?.moduleName}</div>
-                <OutputPanel result={secondResult} error={null} loading={false} />
+                <OutputPanel result={secondResult} error={null} loading={false} onBackToHome={handleBackToHome} />
               </div>
             </aside>
           ) : (
             <aside className="output-sidebar">
-              <OutputPanel result={result} error={error} loading={loading} />
+              <OutputPanel result={result} error={error} loading={loading} onHistorySelect={handleHistorySelect} onBackToHome={handleBackToHome} />
             </aside>
           )}
         </div>

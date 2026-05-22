@@ -14,6 +14,7 @@ const ModuleList: React.FC<Props> = ({ selectedId, secondSelectedId, onSelect })
     const customs: ModuleConfig[] = getAllCustomModules().map((m) => ({
       moduleId: m.moduleId,
       moduleName: m.moduleName,
+      icon: m.icon || "📦",
       description: m.description,
       fields: m.fields,
       _isCustom: true,
@@ -35,6 +36,7 @@ const ModuleList: React.FC<Props> = ({ selectedId, secondSelectedId, onSelect })
               onClick={() => onSelect(mod)}
             >
               <div className="module-item-name">
+                <span className="module-icon">{mod.icon || "📦"}</span>
                 {isA && "● "}{isB && "▲ "}{mod._isCustom ? "✦ " : ""}{mod.moduleName}
               </div>
               <div className="module-item-desc">{mod.description}</div>

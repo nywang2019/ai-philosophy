@@ -139,6 +139,14 @@ body {
   font-weight: 600;
   font-size: 14px;
   margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.module-icon {
+  font-size: 15px;
+  flex-shrink: 0;
 }
 
 .module-item-desc {
@@ -1795,6 +1803,94 @@ body {
   font-weight: 500;
 }
 
+/* ===== Back to home button ===== */
+
+.btn-back-home {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background: none;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-back-home:hover {
+  background: var(--hover);
+  color: var(--text);
+  border-color: var(--primary);
+}
+
+/* ===== Export dropdown ===== */
+
+.export-wrap {
+  position: relative;
+}
+
+.export-dropdown {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  z-index: 20;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  min-width: 130px;
+  padding: 4px 0;
+}
+
+.export-option {
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 0.1s;
+}
+
+.export-option:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+/* ===== Favorites ===== */
+
+.history-filter-fav {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.history-filter-fav:hover {
+  border-color: #f59e0b;
+}
+
+.history-filter-fav.active {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.history-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 /* ===== History Panel ===== */
 
 .history-panel {
@@ -1867,6 +1963,116 @@ body {
   accent-color: var(--primary);
 }
 
+/* ===== Welcome Panel (中间空态) ===== */
+
+.welcome-panel {
+  text-align: center;
+  padding: 48px 24px 0;
+}
+
+.welcome-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 14px;
+}
+
+.welcome-desc {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.8;
+  max-width: 420px;
+  margin: 0 auto 28px;
+}
+
+.welcome-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.welcome-tag {
+  padding: 5px 14px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  cursor: default;
+}
+
+.welcome-tag:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--active-bg);
+}
+
+/* ===== Welcome Sidebar (右边空态) ===== */
+
+.welcome-sidebar {
+  padding: 32px 20px 20px;
+}
+
+.welcome-sidebar-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+.welcome-sidebar-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.welcome-activity {
+  display: flex;
+  flex-direction: column;
+}
+
+.welcome-activity-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--light-border);
+}
+
+.welcome-activity-item:last-child {
+  border-bottom: none;
+}
+
+.welcome-activity-clickable {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 0 -10px;
+  transition: background 0.15s;
+}
+
+.welcome-activity-clickable:hover {
+  background: var(--hover);
+}
+
+.welcome-activity-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.welcome-activity-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
 .history-search input {
   width: 100%;
   padding: 8px 12px;
@@ -1930,6 +2136,22 @@ body {
 .history-pin-icon {
   font-size: 11px;
   margin-right: 4px;
+}
+
+.history-star-icon {
+  font-size: 13px;
+  cursor: pointer;
+  margin-right: 2px;
+  color: #ccc;
+  transition: color 0.15s;
+}
+
+.history-star-icon:hover {
+  color: #f59e0b;
+}
+
+.history-star-icon.fav-active {
+  color: #f59e0b;
 }
 
 .history-item-meta {
@@ -2262,6 +2484,36 @@ body {
 
 .custom-module-item:last-child {
   border-bottom: none;
+}
+
+.icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.icon-pick {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  border: 2px solid var(--input-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.icon-pick:hover {
+  border-color: var(--primary);
+  background: var(--active-bg);
+}
+
+.icon-pick.active {
+  border-color: var(--primary);
+  background: var(--active-bg);
+  box-shadow: 0 0 0 2px rgba(0,113,227,0.15);
 }
 
 /* ===== Compare Mode ===== */

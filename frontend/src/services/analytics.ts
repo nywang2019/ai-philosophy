@@ -30,6 +30,12 @@ export interface WeekdayStats {
   count: number;
 }
 
+export interface TagStats {
+  tag: string;
+  count: number;
+  percentage: number;
+}
+
 export interface Analytics {
   totalSessions: number;
   todaySessions: number;
@@ -43,6 +49,7 @@ export interface Analytics {
   mostActiveHour: number;
   hourStats: HourStats[];
   weekdayStats: WeekdayStats[];
+  tagStats: TagStats[];
   totalWordsGenerated: number;
   oldestSession: number | null;
   newestSession: number | null;
@@ -89,6 +96,7 @@ export function computeAnalytics(): Analytics {
     ...getAllCustomModules().map((m) => ({
       moduleId: m.moduleId,
       moduleName: m.moduleName,
+      icon: m.icon || "📦",
       description: m.description,
       fields: m.fields,
       _isCustom: true,
@@ -208,6 +216,21 @@ export function computeAnalytics(): Analytics {
     longestStreak = Math.max(longestStreak, streak);
   }
 
+  // 标签统计
+  const tagMap: Record<string, number> = {};
+  for (const e of all) {
+    for (const t of e.tags || []) {
+      tagMap[t] = (tagMap[t] || 0) + 1;
+    }
+  }
+  const tagStats: TagStats[] = Object.entries(tagMap)
+    .map(([tag, count]) => ({
+      tag,
+      count,
+      percentage: totalSessions > 0 ? Math.round((count / totalSessions) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
   // 总生成量 + 存储占用
   const totalWordsGenerated = all.reduce((sum, e) => sum + countWords(e.result), 0);
   let storageBytes = 0;
@@ -231,6 +254,7 @@ export function computeAnalytics(): Analytics {
     mostActiveHour,
     hourStats,
     weekdayStats,
+    tagStats,
     totalWordsGenerated,
     oldestSession: oldest,
     newestSession: newest,

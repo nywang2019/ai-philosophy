@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { GenerateResult } from "../api/client";
+import { getAllHistory, type HistoryEntry } from "../services/historyStore";
 import ResultRenderer from "./ResultRenderer";
 
 type ViewMode = "preview" | "json" | "markdown";
@@ -8,11 +9,98 @@ interface Props {
   result: GenerateResult | null;
   error: string | null;
   loading: boolean;
+  onHistorySelect?: (entry: HistoryEntry) => void;
+  onBackToHome?: () => void;
 }
 
-const OutputPanel: React.FC<Props> = ({ result, error, loading }) => {
+const WelcomeSidebar: React.FC<{ onSelect?: (entry: HistoryEntry) => void }> = ({ onSelect }) => {
+  const recent = useMemo(() => getAllHistory().slice(0, 6), []);
+
+  if (recent.length === 0) {
+    return (
+      <div className="welcome-sidebar">
+        <div className="welcome-sidebar-title">欢迎使用</div>
+        <p className="welcome-sidebar-desc">
+          选择一个模块，输入内容，点击生成。你的每一次思想实验都会记录在案，并在仪表盘中呈现。
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="welcome-sidebar">
+      <div className="welcome-sidebar-title">最近动态</div>
+      <div className="welcome-activity">
+        {recent.map((s: HistoryEntry) => (
+          <div
+            key={s.id}
+            className="welcome-activity-item welcome-activity-clickable"
+            onClick={() => onSelect?.(s)}
+          >
+            <div className="welcome-activity-title">
+              {s.pinned && "📌 "}{s.title}
+            </div>
+            <div className="welcome-activity-meta">
+              {s.moduleName}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome }) => {
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [showExport, setShowExport] = useState(false);
+
+  const jsonToMarkdown = (obj: Record<string, unknown>, depth = 0): string => {
+    const lines: string[] = [];
+    for (const [key, value] of Object.entries(obj)) {
+      const h = "#".repeat(Math.min(depth + 1, 4));
+      if (Array.isArray(value)) {
+        lines.push(`${h} ${key}`, "");
+        value.forEach((item) => {
+          if (typeof item === "object" && item !== null) {
+            lines.push(jsonToMarkdown(item as Record<string, unknown>, depth + 1));
+          } else {
+            lines.push(`- ${String(item)}`);
+          }
+        });
+      } else if (typeof value === "object" && value !== null) {
+        lines.push(`${h} ${key}`, "");
+        lines.push(jsonToMarkdown(value as Record<string, unknown>, depth + 1));
+      } else {
+        lines.push(`**${key}**：${String(value)}`, "");
+      }
+    }
+    return lines.join("\n");
+  };
+
+  const downloadFile = (content: string, filename: string, mime: string) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+
+  const handleExportMD = () => {
+    if (!result) return;
+    const md = `# ${result.moduleName}\n\n${jsonToMarkdown(result.result)}`;
+    downloadFile(md, `${result.moduleName}.md`, "text/markdown");
+    setShowExport(false);
+  };
+
+  const handleExportHTML = () => {
+    if (!result) return;
+    const md = jsonToMarkdown(result.result);
+    const html = `<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8"><title>${result.moduleName}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.8;color:#222}h1{font-size:24px;border-bottom:2px solid #4a6cf7;padding-bottom:8px}h2{font-size:18px;margin-top:24px}h3{font-size:15px}ul{padding-left:20px}li{margin:6px 0}strong{color:#4a6cf7}</style></head><body><h1>${result.moduleName}</h1>${md.replace(/\n/g, "<br>")}</body></html>`;
+    downloadFile(html, `${result.moduleName}.html`, "text/html");
+    setShowExport(false);
+  };
 
   const handleShare = async () => {
     if (!result) return;
@@ -58,9 +146,7 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading }) => {
   if (!result) {
     return (
       <div className="output-panel">
-        <div className="output-placeholder">
-          选择模块并输入参数后，点击"开始生成"
-        </div>
+        <WelcomeSidebar onSelect={onHistorySelect} />
       </div>
     );
   }
@@ -106,6 +192,11 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading }) => {
   return (
     <div className="output-panel">
       <div className="output-header">
+        {onBackToHome && (
+          <button className="btn-back-home" onClick={onBackToHome} title="返回主页">
+            &larr;
+          </button>
+        )}
         <span className="output-title">{result.moduleName}</span>
         <span className="output-duration">耗时: {result.duration}ms</span>
         <div className="output-toggle">
@@ -127,6 +218,17 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading }) => {
           >
             MD
           </button>
+        </div>
+        <div className="export-wrap">
+          <button className="btn-share" onClick={() => setShowExport(!showExport)}>
+            导出
+          </button>
+          {showExport && (
+            <div className="export-dropdown">
+              <div className="export-option" onClick={handleExportMD}>📝 Markdown</div>
+              <div className="export-option" onClick={handleExportHTML}>🌐 HTML</div>
+            </div>
+          )}
         </div>
         <button className="btn-share" onClick={handleShare}>
           分享

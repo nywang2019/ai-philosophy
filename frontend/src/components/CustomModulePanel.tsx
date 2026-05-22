@@ -51,6 +51,7 @@ const CustomModulePanel: React.FC = () => {
     if (exists) {
       updateCustomModule(editing.moduleId!, {
         moduleName: editing.moduleName!,
+        icon: (editing as Record<string, unknown>).icon as string || "📦",
         description: editing.description || "",
         fields: editing.fields || [],
         templateText: editing.templateText!,
@@ -60,6 +61,7 @@ const CustomModulePanel: React.FC = () => {
       addCustomModule({
         moduleId: editing.moduleId!,
         moduleName: editing.moduleName!,
+        icon: (editing as Record<string, unknown>).icon as string || "📦",
         description: editing.description || "",
         fields: editing.fields || [],
         templateText: editing.templateText!,
@@ -101,6 +103,20 @@ const CustomModulePanel: React.FC = () => {
               onChange={(e) => setEditing({ ...editing, moduleName: e.target.value })}
               placeholder="如：古文情感分析器"
             />
+          </div>
+          <div className="input-field">
+            <label>图标</label>
+            <div className="icon-picker">
+              {["📦","🏛️","💬","🔄","📖","🎭","🚀","🔮","💡","🔍","📝","🧠","⚡","🌟","🔥","❤️","🎯","💎","🛡️","🎪"].map((icon) => (
+                <span
+                  key={icon}
+                  className={`icon-pick ${((editing as Record<string, unknown>).icon as string || "📦") === icon ? "active" : ""}`}
+                  onClick={() => setEditing({ ...editing, icon } as typeof editing)}
+                >
+                  {icon}
+                </span>
+              ))}
+            </div>
           </div>
           <div className="input-field">
             <label>描述</label>

@@ -4,6 +4,7 @@ import type { ModuleField } from "../modules/moduleConfig";
 export interface CustomModule {
   moduleId: string;
   moduleName: string;
+  icon: string;
   description: string;
   fields: ModuleField[];
   templateText: string;

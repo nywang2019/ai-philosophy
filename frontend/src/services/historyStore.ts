@@ -13,6 +13,8 @@ export interface HistoryEntry {
   timestamp: number;
   pinned: boolean;
   tags: string[];
+  favorite: boolean;
+  note: string;
 }
 
 const STORAGE_KEY = "ai-philosophy-history";
@@ -118,6 +120,8 @@ export function addHistory(
     timestamp: Date.now(),
     pinned: false,
     tags: [],
+    favorite: false,
+    note: "",
   };
   entries.unshift(entry);
   // 超出上限时淘汰最旧的未置顶记录
@@ -194,4 +198,22 @@ export function getAllTags(): string[] {
   const presets = ["论文素材", "课堂演示", "有趣", "灵感", "待整理"];
   for (const p of presets) tagSet.add(p);
   return [...tagSet].sort();
+}
+
+export function toggleFavorite(id: string): void {
+  const entries = loadAll();
+  const found = entries.find((e) => e.id === id);
+  if (found) {
+    found.favorite = !found.favorite;
+    saveAll(entries);
+  }
+}
+
+export function updateNote(id: string, note: string): void {
+  const entries = loadAll();
+  const found = entries.find((e) => e.id === id);
+  if (found) {
+    found.note = note;
+    saveAll(entries);
+  }
 }

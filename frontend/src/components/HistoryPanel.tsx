@@ -4,6 +4,7 @@ import {
   getAllHistory,
   updateTitle,
   togglePin,
+  toggleFavorite,
   deleteHistory,
   deleteHistories,
   deleteAllHistory,
@@ -24,6 +25,7 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
   const [allTags, setAllTags] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [filterFav, setFilterFav] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [tagMenuId, setTagMenuId] = useState<string | null>(null);
@@ -115,6 +117,7 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
   };
 
   const filtered = entries.filter((e) => {
+    if (filterFav && !e.favorite) return false;
     if (filterTag && !(e.tags || []).includes(filterTag)) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -152,6 +155,13 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
         </div>
         <div className="history-search">
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索对话或标签..." />
+          <button
+            className={`history-filter-fav ${filterFav ? "active" : ""}`}
+            onClick={() => setFilterFav(!filterFav)}
+            title="只看收藏"
+          >
+            ⭐
+          </button>
         </div>
         {/* 批量操作栏 */}
         {sorted.length > 0 && (
@@ -218,6 +228,11 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
                 ) : (
                   <>
                     <div className="history-item-title">
+                      <span
+                        className={`history-star-icon ${entry.favorite ? "fav-active" : ""}`}
+                        onClick={(e) => { e.stopPropagation(); toggleFavorite(entry.id); load(); }}
+                        title={entry.favorite ? "取消收藏" : "收藏"}
+                      >{entry.favorite ? "⭐" : "☆"}</span>
                       {entry.pinned && <span className="history-pin-icon">&#128204;</span>}
                       {entry.title}
                     </div>
