@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ModuleConfig, ModuleField } from "../modules/moduleConfig";
+import WelcomeAnimation from "./WelcomeAnimation";
 
 interface Props {
   config: ModuleConfig | null;
@@ -51,7 +52,8 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
       <div className="input-panel">
         <div className="welcome-panel">
           <h2 className="welcome-title">文史哲AI多模块生成系统</h2>
-          <p className="welcome-desc">穿越典故、对话哲人、推演历史、解构偏见——十个模块，一个入口。请从左侧模块列表中选择一个，开始你的思想实验。</p>
+          <WelcomeAnimation />
+          <p className="welcome-desc">请从左侧模块列表中选择一个，开始你的思想实验。</p>
           <div className="welcome-tags">
             <span className="welcome-tag">📜 典故穿越</span>
             <span className="welcome-tag">💬 哲学家群聊</span>
