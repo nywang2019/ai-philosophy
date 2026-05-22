@@ -12,6 +12,7 @@ export interface HistoryEntry {
   llmConfig: LLMConfig;
   timestamp: number;
   pinned: boolean;
+  tags: string[];
 }
 
 const STORAGE_KEY = "ai-philosophy-history";
@@ -85,6 +86,12 @@ function autoTitle(_moduleName: string, inputs: Record<string, unknown>): string
   // 兜底
   if (question) return snip(question);
   if (topic) return snip(topic);
+
+  // 通用兜底：遍历所有输入值，找到第一个有意义的字符串
+  for (const v of Object.values(inputs)) {
+    if (typeof v === "string" && v.trim()) return snip(v.trim());
+    if (Array.isArray(v) && v.length > 0) return snip(v.join("、"));
+  }
   return "未命名对话";
 }
 
@@ -110,6 +117,7 @@ export function addHistory(
     llmConfig,
     timestamp: Date.now(),
     pinned: false,
+    tags: [],
   };
   entries.unshift(entry);
   // 超出上限时淘汰最旧的未置顶记录
@@ -154,6 +162,36 @@ export function deleteHistory(id: string): void {
   saveAll(entries);
 }
 
+export function deleteHistories(ids: string[]): void {
+  const idSet = new Set(ids);
+  const entries = loadAll().filter((e) => !idSet.has(e.id));
+  saveAll(entries);
+}
+
+export function deleteAllHistory(): void {
+  saveAll([]);
+}
+
 export function getHistoryById(id: string): HistoryEntry | undefined {
   return loadAll().find((e) => e.id === id);
+}
+
+export function updateTags(id: string, tags: string[]): void {
+  const entries = loadAll();
+  const found = entries.find((e) => e.id === id);
+  if (found) {
+    found.tags = tags;
+    saveAll(entries);
+  }
+}
+
+export function getAllTags(): string[] {
+  const tagSet = new Set<string>();
+  for (const e of loadAll()) {
+    for (const t of e.tags || []) tagSet.add(t);
+  }
+  // 预置标签即使未被使用也显示
+  const presets = ["论文素材", "课堂演示", "有趣", "灵感", "待整理"];
+  for (const p of presets) tagSet.add(p);
+  return [...tagSet].sort();
 }

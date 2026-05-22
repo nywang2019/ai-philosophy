@@ -10,6 +10,7 @@ export interface GenerateParams {
   moduleId: string;
   inputs: Record<string, unknown>;
   llmConfig: LLMConfig;
+  customPrompt?: string;
 }
 
 export interface GenerateResult {

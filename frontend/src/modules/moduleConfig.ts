@@ -12,6 +12,7 @@ export interface ModuleConfig {
   moduleName: string;
   description: string;
   fields: ModuleField[];
+  _isCustom?: boolean;
 }
 
 export const moduleConfigs: ModuleConfig[] = [

@@ -11,6 +11,7 @@ export interface GenerateRequest {
   moduleId: string;
   inputs: Record<string, unknown>;
   llmConfig: LLMConfig;
+  customPrompt?: string;
 }
 
 export async function callLLM(

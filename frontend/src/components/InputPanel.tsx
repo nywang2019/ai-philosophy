@@ -3,6 +3,9 @@ import type { ModuleConfig, ModuleField } from "../modules/moduleConfig";
 
 interface Props {
   config: ModuleConfig | null;
+  secondConfig?: ModuleConfig | null;
+  compareMode: boolean;
+  onToggleCompare: () => void;
   onSubmit: (inputs: Record<string, unknown>) => void;
   loading: boolean;
 }
@@ -31,26 +34,15 @@ const TagInput: React.FC<{
       <label>{field.label}</label>
       <div className="tag-container">
         {tags.map((tag, i) => (
-          <span key={i} className="tag">
-            {tag}
-            <button type="button" onClick={() => removeTag(i)}>
-              &times;
-            </button>
-          </span>
+          <span key={i} className="tag">{tag}<button type="button" onClick={() => removeTag(i)}>&times;</button></span>
         ))}
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={field.placeholder}
-        />
+        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder={field.placeholder} />
       </div>
     </div>
   );
 };
 
-const InputPanel: React.FC<Props> = ({ config, onSubmit, loading }) => {
+const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onToggleCompare, onSubmit, loading }) => {
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [tagValues, setTagValues] = useState<Record<string, string[]>>({});
 
@@ -86,9 +78,7 @@ const InputPanel: React.FC<Props> = ({ config, onSubmit, loading }) => {
 
   const isFormValid = () => {
     return config.fields.every((field) => {
-      if (field.type === "tag-input") {
-        return (tagValues[field.key] || []).length > 0;
-      }
+      if (field.type === "tag-input") return (tagValues[field.key] || []).length > 0;
       return (values[field.key] as string)?.trim();
     });
   };
@@ -96,36 +86,19 @@ const InputPanel: React.FC<Props> = ({ config, onSubmit, loading }) => {
   const renderField = (field: ModuleField) => {
     switch (field.type) {
       case "tag-input":
-        return (
-          <TagInput
-            key={field.key}
-            field={field}
-            tags={tagValues[field.key] || []}
-            onChange={(tags) => handleTagChange(field.key, tags)}
-          />
-        );
+        return <TagInput key={field.key} field={field} tags={tagValues[field.key] || []} onChange={(tags) => handleTagChange(field.key, tags)} />;
       case "textarea":
         return (
           <div className="input-field" key={field.key}>
             <label>{field.label}</label>
-            <textarea
-              value={(values[field.key] as string) || ""}
-              onChange={(e) => handleChange(field.key, e.target.value)}
-              placeholder={field.placeholder}
-              rows={4}
-            />
+            <textarea value={(values[field.key] as string) || ""} onChange={(e) => handleChange(field.key, e.target.value)} placeholder={field.placeholder} rows={4} />
           </div>
         );
       default:
         return (
           <div className="input-field" key={field.key}>
             <label>{field.label}</label>
-            <input
-              type="text"
-              value={(values[field.key] as string) || ""}
-              onChange={(e) => handleChange(field.key, e.target.value)}
-              placeholder={field.placeholder}
-            />
+            <input type="text" value={(values[field.key] as string) || ""} onChange={(e) => handleChange(field.key, e.target.value)} placeholder={field.placeholder} />
           </div>
         );
     }
@@ -133,15 +106,25 @@ const InputPanel: React.FC<Props> = ({ config, onSubmit, loading }) => {
 
   return (
     <div className="input-panel">
-      <div className="input-panel-header">{config.moduleName}</div>
+      <div className="input-panel-header">
+        {compareMode && secondConfig
+          ? <><span className="compare-badge-a">● {config.moduleName}</span> vs <span className="compare-badge-b">▲ {secondConfig.moduleName}</span></>
+          : config.moduleName
+        }
+      </div>
+      <div className="compare-toggle-row">
+        <label className="compare-toggle">
+          <input type="checkbox" checked={compareMode} onChange={onToggleCompare} />
+          <span>对比模式</span>
+        </label>
+        {compareMode && !secondConfig && (
+          <span className="compare-hint">请在左侧模块列表选择第二个模块（显示为 ▲）</span>
+        )}
+      </div>
       <form onSubmit={handleSubmit}>
         {config.fields.map(renderField)}
-        <button
-          type="submit"
-          className="btn-generate"
-          disabled={!isFormValid() || loading}
-        >
-          {loading ? "生成中..." : "开始生成"}
+        <button type="submit" className="btn-generate" disabled={!isFormValid() || loading || (compareMode && !secondConfig)}>
+          {loading ? "生成中..." : compareMode && secondConfig ? "双模块生成" : "开始生成"}
         </button>
       </form>
     </div>

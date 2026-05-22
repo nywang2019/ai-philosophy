@@ -6,6 +6,7 @@ import {
   getAllPromptTemplates,
   updatePromptTemplate,
   resetPromptTemplate,
+  injectParams,
 } from "./prompts/templates";
 import { callLLM, extractJSON, GenerateRequest } from "./services/llmService";
 
@@ -41,15 +42,24 @@ app.post("/api/generate", async (req, res) => {
       return;
     }
 
-    const template = getTemplate(moduleId);
-    if (!template) {
-      res.status(404).json({
-        error: `未找到模块：${moduleId}`,
-      });
-      return;
-    }
+    const { customPrompt } = req.body as GenerateRequest;
+    let prompt: string;
+    let resolvedModuleName = moduleId;
 
-    const prompt = template.buildPrompt(inputs);
+    if (customPrompt) {
+      prompt = injectParams(customPrompt, inputs);
+      resolvedModuleName = (inputs._customModuleName as string) || moduleId;
+    } else {
+      const template = getTemplate(moduleId);
+      if (!template) {
+        res.status(404).json({
+          error: `未找到模块：${moduleId}`,
+        });
+        return;
+      }
+      prompt = template.buildPrompt(inputs);
+      resolvedModuleName = template.moduleName;
+    }
 
     console.log(
       `[${new Date().toISOString()}] 模块: ${moduleId}, model: ${llmConfig.model}`
@@ -72,7 +82,7 @@ app.post("/api/generate", async (req, res) => {
 
     res.json({
       moduleId,
-      moduleName: template.moduleName,
+      moduleName: resolvedModuleName,
       result: parsed,
       duration,
     });

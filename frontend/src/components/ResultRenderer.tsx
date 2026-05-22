@@ -521,6 +521,30 @@ const ConversionView: React.FC<{ data: Record<string, unknown> }> = ({ data }) =
   );
 };
 
+// ===== 通用 key→中文映射 =====
+const KEY_LABELS: Record<string, string> = {
+  keyword: "关键词",
+  religion: "宗教",
+  scripture: "经典出处",
+  interpretation: "核心阐释",
+  practice: "实践意义",
+  comparison: "对比分析",
+  summary: "总结",
+  religions: "宗教分析",
+  explicitEmotion: "显性情感",
+  implicitEmotion: "隐性情感",
+  rhetoricEmotion: "修辞情感",
+  intensityCurve: "情感强度",
+  overallAssessment: "整体评价",
+  intensity: "强度",
+  quality: "情感质地",
+  position: "节点位置",
+};
+
+function keyLabel(key: string): string {
+  return KEY_LABELS[key] || key;
+}
+
 // ===== 通用结构渲染（fallback） =====
 const GenericStructured: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
   const renderValue = (value: unknown, depth: number): React.ReactNode => {
@@ -532,6 +556,30 @@ const GenericStructured: React.FC<{ data: Record<string, unknown> }> = ({ data }
       return <span className="rr-generic-prim">{String(value)}</span>;
     }
     if (Array.isArray(value)) {
+      // 对象数组且每个对象有相同字段 → 卡片网格渲染
+      if (value.length > 0 && value.every((item) => typeof item === "object" && item !== null && !Array.isArray(item))) {
+        const keys = Object.keys(value[0] as Record<string, unknown>);
+        const COLORS = ["#4a6cf7", "#e82127", "#389e0d", "#c75a2c", "#7c3aed", "#0891b2", "#d97706"];
+        return (
+          <div className="rr-generic-cards">
+            {value.map((item, i) => (
+              <div key={i} className="rr-generic-card" style={{ borderTopColor: COLORS[i % COLORS.length] }}>
+                {keys.map((k) => {
+                  const v = (item as Record<string, unknown>)[k];
+                  return (
+                    <div key={k} className="rr-generic-card-field">
+                      <div className="rr-generic-card-key">{keyLabel(k)}</div>
+                      <div className="rr-generic-card-val">
+                        {typeof v === "string" ? v : renderValue(v, depth + 2)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        );
+      }
       return (
         <div className="rr-generic-list">
           {value.map((item, i) => (
@@ -548,7 +596,7 @@ const GenericStructured: React.FC<{ data: Record<string, unknown> }> = ({ data }
         <div className="rr-generic-obj" style={{ marginLeft: depth > 0 ? 16 : 0 }}>
           {Object.entries(value as Record<string, unknown>).map(([k, v]) => (
             <div key={k} className="rr-generic-row">
-              <div className="rr-generic-key">{k}</div>
+              <div className="rr-generic-key">{keyLabel(k)}</div>
               <div className="rr-generic-val">{renderValue(v, depth + 1)}</div>
             </div>
           ))}
@@ -562,7 +610,7 @@ const GenericStructured: React.FC<{ data: Record<string, unknown> }> = ({ data }
     <div className="rr-generic">
       {Object.entries(data).map(([key, value]) => (
         <div key={key} className="rr-generic-section">
-          <div className="rr-generic-section-title">{key}</div>
+          <div className="rr-generic-section-title">{keyLabel(key)}</div>
           {renderValue(value, 0)}
         </div>
       ))}
@@ -575,38 +623,57 @@ const ResultRenderer: React.FC<Props> = ({ result }) => {
   const { moduleId, result: data } = result;
   const d = data as Record<string, unknown>;
 
-  // 对话类
-  if (moduleId === "philosopher_chat" || moduleId === "literary_chat") {
-    return <ChatBubbles data={d} />;
-  }
+  // 检测数据类型，决定渲染器
+  const detectRenderer = (): React.ReactNode => {
+    // 已知模块
+    if (moduleId === "philosopher_chat" || moduleId === "literary_chat") {
+      return <ChatBubbles data={d} />;
+    }
+    if (moduleId === "classical_translation" || moduleId === "philosophy_explainer") {
+      return <MultiVersion data={d} />;
+    }
+    if (moduleId === "idiom_time_travel" || moduleId === "counterfactual_history") {
+      return <TimelineView data={d} />;
+    }
+    if (moduleId === "poetry_emotion" || moduleId === "bias_detector") {
+      return <AnalysisReport data={d} />;
+    }
+    if (moduleId === "philosophy_startup") {
+      return <BusinessProfile data={d} />;
+    }
+    if (moduleId === "era_filter") {
+      return <ConversionView data={d} />;
+    }
 
-  // 多层版本类
-  if (moduleId === "classical_translation" || moduleId === "philosophy_explainer") {
-    return <MultiVersion data={d} />;
-  }
+    // 自定义模块：根据输出结构自动匹配渲染器
+    if ("dialogues" in d && Array.isArray(d.dialogues)) {
+      return <ChatBubbles data={d} />;
+    }
+    if ("branches" in d || "eras" in d) {
+      return <TimelineView data={d} />;
+    }
+    if ("swot" in d || "companyName" in d) {
+      return <BusinessProfile data={d} />;
+    }
+    if ("conversions" in d && Array.isArray(d.conversions)) {
+      return <ConversionView data={d} />;
+    }
+    if ("emotionCurve" in d || "biasPoints" in d || "intensityCurve" in d) {
+      return <AnalysisReport data={d} />;
+    }
+    // 多版本检测：至少有3个以Version结尾的字段
+    const versionFields = Object.keys(d).filter(
+      (k) =>
+        k.endsWith("Version") || k.endsWith("Translation") || k === "socialMedia" || k === "campusMeme"
+    );
+    if (versionFields.length >= 3) {
+      return <MultiVersion data={d} />;
+    }
 
-  // 时间线类
-  if (moduleId === "idiom_time_travel" || moduleId === "counterfactual_history") {
-    return <TimelineView data={d} />;
-  }
+    return <GenericStructured data={d} />;
+  };
 
-  // 分析报告类
-  if (moduleId === "poetry_emotion" || moduleId === "bias_detector") {
-    return <AnalysisReport data={d} />;
-  }
-
-  // 商业分析类
-  if (moduleId === "philosophy_startup") {
-    return <BusinessProfile data={d} />;
-  }
-
-  // 转换类
-  if (moduleId === "era_filter") {
-    return <ConversionView data={d} />;
-  }
-
-  // fallback
-  return <GenericStructured data={d} />;
+  return <>{detectRenderer()}</>;
 };
 
 export default ResultRenderer;

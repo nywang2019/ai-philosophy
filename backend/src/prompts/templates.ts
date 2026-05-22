@@ -424,7 +424,7 @@ for (const [key, tmpl] of Object.entries(defaultTemplates)) {
 }
 
 // 参数注入：将 {key} 和 {key:json} 替换为实际值
-function injectParams(
+export function injectParams(
   templateText: string,
   inputs: Record<string, unknown>
 ): string {

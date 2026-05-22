@@ -1,6 +1,8 @@
 // 数据分析服务 - 从历史记录中提取统计数据
 import { getAllHistory, type HistoryEntry } from "./historyStore";
 import { moduleConfigs } from "../modules/moduleConfig";
+import type { ModuleConfig } from "../modules/moduleConfig";
+import { getAllCustomModules } from "./customModuleStore";
 
 export interface ModuleStats {
   moduleId: string;
@@ -81,6 +83,18 @@ export function computeAnalytics(): Analytics {
   const pinnedSessions = all.filter((e) => e.pinned).length;
   const pinRate = totalSessions > 0 ? Math.round((pinnedSessions / totalSessions) * 100) : 0;
 
+  // 合并内置模块和自定义模块
+  const allModuleConfigs: ModuleConfig[] = [
+    ...moduleConfigs,
+    ...getAllCustomModules().map((m) => ({
+      moduleId: m.moduleId,
+      moduleName: m.moduleName,
+      description: m.description,
+      fields: m.fields,
+      _isCustom: true,
+    })),
+  ];
+
   // 模块统计（含平均输出量和 pin 率）
   const moduleMap: Record<string, { count: number; totalSize: number; pins: number }> = {};
   for (const e of all) {
@@ -89,7 +103,7 @@ export function computeAnalytics(): Analytics {
     moduleMap[e.moduleId].totalSize += countWords(e.result);
     if (e.pinned) moduleMap[e.moduleId].pins++;
   }
-  const moduleStats: ModuleStats[] = moduleConfigs
+  const moduleStats: ModuleStats[] = allModuleConfigs
     .map((m) => {
       const d = moduleMap[m.moduleId] || { count: 0, totalSize: 0, pins: 0 };
       return {
@@ -103,6 +117,23 @@ export function computeAnalytics(): Analytics {
       };
     })
     .sort((a, b) => b.count - a.count);
+
+  // 补充：历史中存在但模块配置中已删除的模块
+  const configIds = new Set(allModuleConfigs.map((m) => m.moduleId));
+  for (const [mid, d] of Object.entries(moduleMap)) {
+    if (!configIds.has(mid) && d.count > 0) {
+      moduleStats.push({
+        moduleId: mid,
+        moduleName: `${mid}（已删除）`,
+        count: d.count,
+        percentage: totalSessions > 0 ? (d.count / totalSessions) * 100 : 0,
+        avgOutputSize: d.count > 0 ? Math.round(d.totalSize / d.count) : 0,
+        pinnedCount: d.pins,
+        pinRate: d.count > 0 ? Math.round((d.pins / d.count) * 100) : 0,
+      });
+    }
+  }
+  moduleStats.sort((a, b) => b.count - a.count);
 
   const topModule = moduleStats[0]?.count > 0 ? moduleStats[0] : null;
 

@@ -3,6 +3,8 @@ import type { LLMConfig } from "../api/client";
 import PromptEditor from "./PromptEditor";
 import ThemePanel from "./ThemePanel";
 import OutputPrefsPanel from "./OutputPrefsPanel";
+import CustomModulePanel from "./CustomModulePanel";
+import DataPortPanel from "./DataPortPanel";
 
 interface Props {
   visible: boolean;
@@ -18,9 +20,11 @@ interface SettingsPanel {
 
 const panels: SettingsPanel[] = [
   { key: "api", label: "API配置" },
-  { key: "prompts", label: "提示词模板" },
-  { key: "theme", label: "系统主题" },
+  { key: "prompts", label: "提示词" },
+  { key: "custom", label: "自定义模块" },
+  { key: "theme", label: "主题" },
   { key: "output", label: "输出偏好" },
+  { key: "data", label: "导入导出" },
 ];
 
 const STORAGE_KEY = "ai-philosophy-llm-config";
@@ -134,8 +138,10 @@ const SettingsModal: React.FC<Props> = ({ visible, onClose, onSave }) => {
               <ApiConfigPanel onSave={onSave} onClose={onClose} />
             )}
             {activePanel === "prompts" && <PromptEditor />}
+            {activePanel === "custom" && <CustomModulePanel />}
             {activePanel === "theme" && <ThemePanel />}
             {activePanel === "output" && <OutputPrefsPanel />}
+            {activePanel === "data" && <DataPortPanel />}
           </div>
         </div>
       </div>

@@ -1,41 +1,58 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   fetchPrompts,
   updatePrompt,
   resetPrompt,
   type PromptTemplateData,
 } from "../api/client";
+import {
+  getAllCustomModules,
+  updateCustomModule,
+} from "../services/customModuleStore";
 
 const PromptEditor: React.FC = () => {
-  const [prompts, setPrompts] = useState<PromptTemplateData[]>([]);
+  const [builtIn, setBuiltIn] = useState<PromptTemplateData[]>([]);
+  const [allPrompts, setAllPrompts] = useState<(PromptTemplateData & { _isCustom?: boolean })[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isCustom, setIsCustom] = useState(false);
   const [editText, setEditText] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  useEffect(() => {
-    loadPrompts();
-  }, []);
-
-  const loadPrompts = async () => {
+  const loadAll = useCallback(async () => {
     try {
       const data = await fetchPrompts();
-      setPrompts(data);
-      if (data.length > 0 && !selectedId) {
-        setSelectedId(data[0].moduleId);
-        setEditText(data[0].templateText);
+      setBuiltIn(data);
+      const customs = getAllCustomModules().map((m) => ({
+        moduleId: m.moduleId,
+        moduleName: m.moduleName,
+        templateText: m.templateText,
+        _isCustom: true as const,
+      }));
+      const merged = [...data, ...customs];
+      setAllPrompts(merged);
+      if (merged.length > 0 && !selectedId) {
+        const first = merged[0];
+        setSelectedId(first.moduleId);
+        setEditText(first.templateText);
+        setIsCustom(!!(first as { _isCustom?: boolean })._isCustom);
       }
     } catch {
       setMessage({ type: "error", text: "加载提示词失败" });
     }
-  };
+  }, []);
 
-  const selected = prompts.find((p) => p.moduleId === selectedId);
+  useEffect(() => {
+    loadAll();
+  }, []);
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
-    const p = prompts.find((p) => p.moduleId === id);
-    if (p) setEditText(p.templateText);
+    const p = allPrompts.find((p) => p.moduleId === id);
+    if (p) {
+      setEditText(p.templateText);
+      setIsCustom(!!(p as { _isCustom?: boolean })._isCustom);
+    }
     setMessage(null);
   };
 
@@ -44,13 +61,14 @@ const PromptEditor: React.FC = () => {
     setSaving(true);
     setMessage(null);
     try {
-      await updatePrompt(selectedId, editText);
-      setPrompts((prev) =>
-        prev.map((p) =>
-          p.moduleId === selectedId ? { ...p, templateText: editText } : p
-        )
-      );
-      setMessage({ type: "success", text: "保存成功" });
+      if (isCustom) {
+        updateCustomModule(selectedId, { templateText: editText });
+        setMessage({ type: "success", text: "保存成功" });
+      } else {
+        await updatePrompt(selectedId, editText);
+        setMessage({ type: "success", text: "保存成功" });
+      }
+      loadAll();
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "保存失败" });
     } finally {
@@ -60,14 +78,14 @@ const PromptEditor: React.FC = () => {
 
   const handleReset = async () => {
     if (!selectedId) return;
+    if (isCustom) return; // 自定义模块无默认值
     if (!confirm("确定要重置为默认提示词吗？当前修改将丢失。")) return;
     setSaving(true);
     setMessage(null);
     try {
       await resetPrompt(selectedId);
-      await loadPrompts();
+      await loadAll();
       setMessage({ type: "success", text: "已重置为默认值" });
-      // 刷新编辑区
       const refreshed = await fetchPrompts();
       const found = refreshed.find((p) => p.moduleId === selectedId);
       if (found) setEditText(found.templateText);
@@ -81,8 +99,8 @@ const PromptEditor: React.FC = () => {
   return (
     <div className="prompt-editor">
       <div className="prompt-editor-sidebar">
-        <div className="prompt-editor-sidebar-header">模块列表</div>
-        {prompts.map((p) => (
+        <div className="prompt-editor-sidebar-header">内置模块</div>
+        {builtIn.map((p) => (
           <div
             key={p.moduleId}
             className={`prompt-editor-item ${selectedId === p.moduleId ? "active" : ""}`}
@@ -91,20 +109,40 @@ const PromptEditor: React.FC = () => {
             {p.moduleName}
           </div>
         ))}
+        {allPrompts.filter((p) => (p as { _isCustom?: boolean })._isCustom).length > 0 && (
+          <>
+            <div className="prompt-editor-sidebar-header" style={{ marginTop: 12 }}>
+              自定义模块
+            </div>
+            {allPrompts.filter((p) => (p as { _isCustom?: boolean })._isCustom).map((p) => (
+              <div
+                key={p.moduleId}
+                className={`prompt-editor-item ${selectedId === p.moduleId ? "active" : ""}`}
+                onClick={() => handleSelect(p.moduleId)}
+              >
+                ✦ {p.moduleName}
+              </div>
+            ))}
+          </>
+        )}
       </div>
       <div className="prompt-editor-main">
-        {selected && (
+        {selectedId && (
           <>
             <div className="prompt-editor-toolbar">
-              <span className="prompt-editor-title">{selected.moduleName}</span>
+              <span className="prompt-editor-title">
+                {isCustom && "✦ "}{allPrompts.find((p) => p.moduleId === selectedId)?.moduleName || ""}
+              </span>
               <div className="prompt-editor-actions">
-                <button
-                  className="btn-reset"
-                  onClick={handleReset}
-                  disabled={saving}
-                >
-                  重置默认
-                </button>
+                {!isCustom && (
+                  <button
+                    className="btn-reset"
+                    onClick={handleReset}
+                    disabled={saving}
+                  >
+                    重置默认
+                  </button>
+                )}
                 <button
                   className="btn-save-prompt"
                   onClick={handleSave}
