@@ -145,5 +145,5 @@ app.post("/api/prompts/:moduleId/reset", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Backend server running at http://localhost:${PORT}`);
+  console.log(`[${new Date().toISOString()}] Backend server running at http://localhost:${PORT}`);
 });

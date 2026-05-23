@@ -8,10 +8,16 @@ export interface ExportData {
 }
 
 export function exportHistory(): ExportData {
+  const raw = getAllHistory();
+  // 安全：导出时剥离 apiKey
+  const safe = raw.map(e => ({
+    ...e,
+    llmConfig: e.llmConfig ? { ...e.llmConfig, apiKey: "" } : e.llmConfig,
+  }));
   return {
     version: "5.0",
     exportedAt: new Date().toISOString(),
-    history: getAllHistory(),
+    history: safe,
   };
 }
 
@@ -37,6 +43,20 @@ export function importHistory(jsonStr: string): { success: boolean; error?: stri
 
   if (!Array.isArray(data.history)) {
     return { success: false, error: "文件中没有找到历史会话数据", count: 0 };
+  }
+
+  // 安全：导入后恢复当前 apiKey（从localStorage读取）
+  const currentConfig = localStorage.getItem("ai-philosophy-llm-config");
+  let currentApiKey = "";
+  if (currentConfig) {
+    try { currentApiKey = JSON.parse(currentConfig).apiKey || ""; } catch { /* ignore */ }
+  }
+  if (currentApiKey) {
+    for (const e of data.history) {
+      if (e.llmConfig && !e.llmConfig.apiKey) {
+        e.llmConfig.apiKey = currentApiKey;
+      }
+    }
   }
 
   localStorage.setItem("ai-philosophy-history", JSON.stringify(data.history));

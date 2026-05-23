@@ -1,5 +1,41 @@
 # 开发日志
 
+## 2026-05-22 - v10.0 研究项目 + 批量生成 + AI标签 + 会话笔记 + Token统计
+
+### 修改文件
+- `backend/src/services/llmService.ts` - callLLM返回LLMResult（含content+usage），捕获API Token信息
+- `backend/src/index.ts` - 响应新增usage字段，日志增加Token输出
+- `frontend/src/services/projectStore.ts` - 新建，研究项目CRUD + 活跃项目 + 图标管理
+- `frontend/src/components/ProjectPanel.tsx` - 新建，项目面板（创建/管理/活跃/会话关联/导出文档）
+- `frontend/src/services/customModuleStore.ts` - 新增defaultTemplateText、resetCustomPrompt、saveAsDefaultPrompt
+- `frontend/src/services/historyStore.ts` - 新增projectId、totalTokens、getSessionsByProject、setTokens、deleteTagGlobally
+- `frontend/src/services/analytics.ts` - 新增noteRate/noteSessions/totalTokens/totalProjects/projectStats
+- `frontend/src/api/client.ts` - GenerateResult新增usage字段
+- `frontend/src/components/Dashboard.tsx` - 笔记率/总Token/研究项目统计卡，时间筛选，项目看板
+- `frontend/src/components/OutputPanel.tsx` - 新增NoteEditor、Token显示、delete note
+- `frontend/src/components/InputPanel.tsx` - 批量模式、活跃项目徽章
+- `frontend/src/components/HistoryPanel.tsx` - 仅看笔记筛选、笔记预览、标签全局删除
+- `frontend/src/components/PromptEditor.tsx` - 自定义模块重置/设为默认，保存后不跳转
+- `frontend/src/App.tsx` - 页面stats、Token保存、项目面板集成、文字修改
+- `frontend/src/App.css` - 骨架屏、笔记区、批量卡片、suggest芯片、项目标签样式
+- `CHANGELOG.md` - 全版本更新日志
+- `devlog.md` - 本文件
+
+### 修改内容
+参见 CHANGELOG.md v10.0 条目
+
+### 风险
+- Token统计依赖LLM API返回usage字段，部分代理不返回时显示为0
+- 自定义模块defaultTemplateText迁移在loadAll时自动执行，依赖localStorage数据完整性
+
+### 未完成项
+- 无
+
+### 下一步建议
+继续按用户需求迭代
+
+---
+
 ## 2026-05-21 - 项目初始化与核心功能开发
 
 ### 修改文件
