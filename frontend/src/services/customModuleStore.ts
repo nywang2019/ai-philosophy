@@ -8,15 +8,32 @@ export interface CustomModule {
   description: string;
   fields: ModuleField[];
   templateText: string;
+  defaultTemplateText: string;
   createdAt: number;
 }
 
 const STORAGE_KEY = "ai-philosophy-custom-modules";
 
+// 迁移：为已有模块补充 defaultTemplateText
+function migrate(mods: CustomModule[]): boolean {
+  let changed = false;
+  for (const m of mods) {
+    if (!m.defaultTemplateText) {
+      m.defaultTemplateText = m.templateText;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 function loadAll(): CustomModule[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as CustomModule[];
+    if (raw) {
+      const mods = JSON.parse(raw) as CustomModule[];
+      if (migrate(mods)) saveAll(mods);
+      return mods;
+    }
   } catch { /* ignore */ }
   return [];
 }
@@ -29,9 +46,9 @@ export function getAllCustomModules(): CustomModule[] {
   return loadAll();
 }
 
-export function addCustomModule(mod: Omit<CustomModule, "createdAt">): CustomModule {
+export function addCustomModule(mod: Omit<CustomModule, "createdAt" | "defaultTemplateText">): CustomModule {
   const all = loadAll();
-  const entry: CustomModule = { ...mod, createdAt: Date.now() };
+  const entry: CustomModule = { ...mod, defaultTemplateText: mod.templateText, createdAt: Date.now() };
   all.push(entry);
   saveAll(all);
   return entry;
@@ -58,4 +75,22 @@ export function deleteCustomModule(moduleId: string): boolean {
 
 export function getCustomModule(moduleId: string): CustomModule | undefined {
   return loadAll().find((m) => m.moduleId === moduleId);
+}
+
+export function resetCustomPrompt(moduleId: string): boolean {
+  const all = loadAll();
+  const found = all.find((m) => m.moduleId === moduleId);
+  if (!found) return false;
+  found.templateText = found.defaultTemplateText;
+  saveAll(all);
+  return true;
+}
+
+export function saveAsDefaultPrompt(moduleId: string): boolean {
+  const all = loadAll();
+  const found = all.find((m) => m.moduleId === moduleId);
+  if (!found) return false;
+  found.defaultTemplateText = found.templateText;
+  saveAll(all);
+  return true;
 }

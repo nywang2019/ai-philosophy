@@ -10,6 +10,7 @@ import {
   deleteAllHistory,
   updateTags,
   getAllTags,
+  deleteTagGlobally,
 } from "../services/historyStore";
 
 interface Props {
@@ -26,6 +27,7 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
   const [search, setSearch] = useState("");
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [filterFav, setFilterFav] = useState(false);
+  const [filterNotes, setFilterNotes] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [tagMenuId, setTagMenuId] = useState<string | null>(null);
@@ -39,6 +41,14 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
   useEffect(() => {
     if (visible) load();
   }, [visible, load, refreshKey]);
+
+  // 点击空白区域关闭标签菜单
+  useEffect(() => {
+    if (!visible) return;
+    const handler = () => setTagMenuId(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [visible]);
 
   const handleRename = (id: string) => {
     if (editText.trim()) {
@@ -119,6 +129,12 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
     return { background: bg, color: fg };
   };
 
+  const handleDeleteTag = (tag: string) => {
+    deleteTagGlobally(tag);
+    if (filterTag === tag) setFilterTag(null);
+    load();
+  };
+
   const handleAddCustomTag = (entry: HistoryEntry) => {
     const name = prompt("输入新标签名称：");
     if (name && name.trim()) {
@@ -131,6 +147,7 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
 
   const filtered = entries.filter((e) => {
     if (filterFav && !e.favorite) return false;
+    if (filterNotes && !e.note) return false;
     if (filterTag && !(e.tags || []).includes(filterTag)) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -175,6 +192,13 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
           >
             ⭐
           </button>
+          <button
+            className={`history-filter-fav ${filterNotes ? "active" : ""}`}
+            onClick={() => setFilterNotes(!filterNotes)}
+            title="只看有笔记"
+          >
+            📝
+          </button>
         </div>
         {/* 批量操作栏 */}
         {sorted.length > 0 && (
@@ -209,6 +233,11 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
                 onClick={() => setFilterTag(filterTag === tag ? null : tag)}
               >
                 {tag}
+                <span
+                  className="history-tag-delete"
+                  onClick={(e) => { e.stopPropagation(); handleDeleteTag(tag); }}
+                  title="删除此标签"
+                >×</span>
               </span>
             ))}
           </div>
@@ -260,12 +289,15 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
                         ))}
                       </div>
                     )}
+                    {entry.note && (
+                      <div className="history-item-note">📝 {entry.note.slice(0, 60)}{entry.note.length > 60 ? "…" : ""}</div>
+                    )}
                   </>
                 )}
               </div>
               <div className="history-item-actions">
                 {/* 标签菜单 */}
-                <div className="history-tag-menu-wrap" onMouseLeave={() => setTagMenuId(null)}>
+                <div className="history-tag-menu-wrap" onClick={(e) => e.stopPropagation()}>
                   <button
                     className="history-action-btn"
                     title="标签"

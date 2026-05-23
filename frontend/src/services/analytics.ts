@@ -3,6 +3,7 @@ import { getAllHistory, type HistoryEntry } from "./historyStore";
 import { moduleConfigs } from "../modules/moduleConfig";
 import type { ModuleConfig } from "../modules/moduleConfig";
 import { getAllCustomModules } from "./customModuleStore";
+import { getAllProjects, type ResearchProject } from "./projectStore";
 
 export interface ModuleStats {
   moduleId: string;
@@ -19,6 +20,11 @@ export interface ModuleStats {
 export interface TitleWord {
   word: string;
   count: number;
+}
+
+export interface ProjectStats {
+  project: ResearchProject;
+  sessionCount: number;
 }
 
 export interface DailyStats {
@@ -50,6 +56,9 @@ export interface Analytics {
   pinRate: number;
   favoriteSessions: number;
   favoriteRate: number;
+  noteSessions: number;
+  noteRate: number;
+  totalProjects: number;
   topModule: ModuleStats | null;
   moduleStats: ModuleStats[];
   dailyStats: DailyStats[];
@@ -61,6 +70,7 @@ export interface Analytics {
   weekdayStats: WeekdayStats[];
   tagStats: TagStats[];
   totalWordsGenerated: number;
+  totalTokens: number;
   totalInputChars: number;
   averageInputLen: number;
   thisWeekCount: number;
@@ -71,6 +81,7 @@ export interface Analytics {
   longestStreak: number;
   storageBytes: number;
   titleWords: TitleWord[];
+  projectStats: ProjectStats[];
 }
 
 function countWords(result: Record<string, unknown>): number {
@@ -92,8 +103,10 @@ function getDayStart(ts: number): number {
   return d.getTime();
 }
 
-export function computeAnalytics(): Analytics {
-  const all = getAllHistory();
+export function computeAnalytics(daysBack = 0): Analytics {
+  const allRaw = getAllHistory();
+  const cutoff = daysBack > 0 ? Date.now() - daysBack * 86400000 : 0;
+  const all = daysBack > 0 ? allRaw.filter(e => e.timestamp >= cutoff) : allRaw;
   const today = getDateKey(Date.now());
 
   // 总次数
@@ -109,6 +122,9 @@ export function computeAnalytics(): Analytics {
   // 收藏统计
   const favoriteSessions = all.filter((e) => e.favorite).length;
   const favoriteRate = totalSessions > 0 ? Math.round((favoriteSessions / totalSessions) * 100) : 0;
+
+  const noteSessions = all.filter((e) => e.note).length;
+  const noteRate = totalSessions > 0 ? Math.round((noteSessions / totalSessions) * 100) : 0;
 
   // 合并内置模块和自定义模块
   const allModuleConfigs: ModuleConfig[] = [
@@ -306,6 +322,17 @@ export function computeAnalytics(): Analytics {
     .sort((a, b) => b.count - a.count)
     .slice(0, 15);
 
+  // 项目统计
+  const projects = getAllProjects();
+  const totalProjects = projects.length;
+  const projectStats: ProjectStats[] = projects.map(p => ({
+    project: p,
+    sessionCount: all.filter(e => e.projectId === p.id).length,
+  })).sort((a, b) => b.sessionCount - a.sessionCount);
+
+  // Token统计
+  const totalTokens = all.reduce((sum, e) => sum + (e.totalTokens || 0), 0);
+
   // 总生成量 + 存储占用
   const totalWordsGenerated = all.reduce((sum, e) => sum + countWords(e.result), 0);
   let storageBytes = 0;
@@ -323,6 +350,9 @@ export function computeAnalytics(): Analytics {
     pinRate,
     favoriteSessions,
     favoriteRate,
+    noteSessions,
+    noteRate,
+    totalProjects,
     topModule,
     moduleStats,
     dailyStats,
@@ -334,6 +364,7 @@ export function computeAnalytics(): Analytics {
     weekdayStats,
     tagStats,
     totalWordsGenerated,
+    totalTokens,
     totalInputChars,
     averageInputLen,
     thisWeekCount,
@@ -344,5 +375,6 @@ export function computeAnalytics(): Analytics {
     longestStreak,
     storageBytes,
     titleWords,
+    projectStats,
   };
 }

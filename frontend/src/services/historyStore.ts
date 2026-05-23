@@ -15,6 +15,8 @@ export interface HistoryEntry {
   tags: string[];
   favorite: boolean;
   note: string;
+  projectId?: string;
+  totalTokens?: number;
 }
 
 const STORAGE_KEY = "ai-philosophy-history";
@@ -122,6 +124,9 @@ export function addHistory(
     tags: [],
     favorite: false,
     note: "",
+    projectId: (() => {
+      try { return localStorage.getItem("ai-philosophy-active-project") || undefined; } catch { return undefined; }
+    })(),
   };
   entries.unshift(entry);
   // 超出上限时淘汰最旧的未置顶记录
@@ -198,6 +203,38 @@ export function getAllTags(): string[] {
   const presets = ["论文素材", "课堂演示", "有趣", "灵感", "待整理"];
   for (const p of presets) tagSet.add(p);
   return [...tagSet].sort();
+}
+
+export function setTokens(sessionId: string, tokens: number): void {
+  const entries = loadAll();
+  const found = entries.find(e => e.id === sessionId);
+  if (found) {
+    found.totalTokens = tokens;
+    saveAll(entries);
+  }
+}
+
+export function setSessionProject(sessionId: string, projectId: string | null): void {
+  const entries = loadAll();
+  const found = entries.find(e => e.id === sessionId);
+  if (found) {
+    found.projectId = projectId || undefined;
+    saveAll(entries);
+  }
+}
+
+export function getSessionsByProject(projectId: string): HistoryEntry[] {
+  return loadAll().filter(e => e.projectId === projectId);
+}
+
+export function deleteTagGlobally(tag: string): void {
+  const entries = loadAll();
+  for (const e of entries) {
+    if (e.tags && e.tags.includes(tag)) {
+      e.tags = e.tags.filter(t => t !== tag);
+    }
+  }
+  saveAll(entries);
 }
 
 export function toggleFavorite(id: string): void {

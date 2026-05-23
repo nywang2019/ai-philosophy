@@ -66,18 +66,18 @@ app.post("/api/generate", async (req, res) => {
     );
 
     const rawResult = await callLLM(prompt, llmConfig);
-    const jsonResult = extractJSON(rawResult);
+    const jsonResult = extractJSON(rawResult.content);
 
     let parsed;
     try {
       parsed = JSON.parse(jsonResult);
     } catch {
-      parsed = { raw: rawResult };
+      parsed = { raw: rawResult.content };
     }
 
     const duration = Date.now() - startTime;
     console.log(
-      `[${new Date().toISOString()}] 完成: ${moduleId}, 耗时: ${duration}ms`
+      `[${new Date().toISOString()}] 完成: ${moduleId}, 耗时: ${duration}ms, tokens: ${rawResult.usage?.totalTokens || "N/A"}`
     );
 
     res.json({
@@ -85,6 +85,7 @@ app.post("/api/generate", async (req, res) => {
       moduleName: resolvedModuleName,
       result: parsed,
       duration,
+      usage: rawResult.usage || null,
     });
   } catch (error) {
     const message =

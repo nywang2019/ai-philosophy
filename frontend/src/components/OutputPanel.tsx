@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { GenerateResult } from "../api/client";
-import { getAllHistory, type HistoryEntry } from "../services/historyStore";
+import { getAllHistory, updateNote, type HistoryEntry } from "../services/historyStore";
 import ResultRenderer from "./ResultRenderer";
 
 // ===== SVG 思维导图 =====
@@ -185,6 +185,10 @@ interface Props {
   onHistorySelect?: (entry: HistoryEntry) => void;
   onBackToHome?: () => void;
   onOpenHistory?: () => void;
+  batchResults?: { item: string; res: GenerateResult | null; err: string | null }[] | null;
+  batchProgress?: number;
+  lastHistoryId?: string | null;
+  onNoteChange?: () => void;
 }
 
 const WelcomeSidebar: React.FC<{ onSelect?: (entry: HistoryEntry) => void }> = ({ onSelect }) => {
@@ -224,7 +228,7 @@ const WelcomeSidebar: React.FC<{ onSelect?: (entry: HistoryEntry) => void }> = (
   );
 };
 
-const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome, onOpenHistory }) => {
+const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome, onOpenHistory, batchResults, batchProgress, lastHistoryId, onNoteChange }) => {
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
@@ -335,9 +339,14 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
   if (loading) {
     return (
       <div className="output-panel">
-        <div className="output-placeholder">
-          <div className="loading-spinner" />
-          <p>AI正在生成中...</p>
+        <div className="skeleton-panel">
+          <div className="skeleton-line skeleton-title" />
+          <div className="skeleton-line skeleton-meta" />
+          <div className="skeleton-line skeleton-full" />
+          <div className="skeleton-line skeleton-full" />
+          <div className="skeleton-line skeleton-half" />
+          <div className="skeleton-line skeleton-full" />
+          <div className="skeleton-line skeleton-third" />
         </div>
       </div>
     );
@@ -349,6 +358,33 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
         <div className="output-error">
           <div className="error-title">生成失败</div>
           <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (batchResults && batchResults.length > 0) {
+    return (
+      <div className="output-panel">
+        <div className="output-header">
+          {onBackToHome && <button className="btn-back-home" onClick={onBackToHome} title="返回主页">&#8962;</button>}
+          <span className="output-title">批量生成结果</span>
+          <span className="output-duration">{batchProgress}/{batchResults.length}</span>
+        </div>
+        <div className="output-content">
+          <div className="batch-results">
+            {batchResults.map((br, i) => (
+              <div key={i} className={`batch-card ${br.res ? "done" : br.err ? "error" : "pending"}`}>
+                <div className="batch-card-num">{i + 1}</div>
+                <div className="batch-card-content">
+                  <div className="batch-card-item">{br.item}</div>
+                  {br.res && <ResultRenderer result={br.res} />}
+                  {br.err && <div className="output-error"><div className="error-title">失败</div><p>{br.err}</p></div>}
+                  {!br.res && !br.err && <div className="batch-card-waiting">等待生成...</div>}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -462,6 +498,7 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
         )}
         <span className="output-title">{result.moduleName}</span>
         <span className="output-duration">耗时: {result.duration}ms</span>
+        {result.usage?.totalTokens && <span className="output-duration">Token: {(result.usage.totalTokens / 1000).toFixed(1)}k</span>}
         <div className="output-toggle">
           <button
             className={viewMode === "preview" ? "active" : ""}
@@ -512,6 +549,46 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
         {viewMode === "markdown" && renderMarkdown()}
         {viewMode === "mindmap" && <MindMap data={result.result} title={result.moduleName} />}
       </div>
+      {lastHistoryId && (
+        <NoteEditor historyId={lastHistoryId} onSave={onNoteChange} />
+      )}
+    </div>
+  );
+};
+
+// ===== 笔记编辑器 =====
+const NoteEditor: React.FC<{ historyId: string; onSave?: () => void }> = ({ historyId, onSave }) => {
+  const [note, setNote] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const entry = getAllHistory().find(e => e.id === historyId);
+    setNote(entry?.note || "");
+  }, [historyId]);
+
+  const handleSave = () => {
+    updateNote(historyId, note);
+    setSaved(true);
+    onSave?.();
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  return (
+    <div className="output-note">
+      <div className="output-note-header">
+        <span className="output-note-title">📝 笔记</span>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button className="btn-reset" onClick={() => { updateNote(historyId, ""); setNote(""); onSave?.(); }}>删除</button>
+          <button className="btn-save-prompt" onClick={handleSave}>{saved ? "已保存" : "保存"}</button>
+        </div>
+      </div>
+      <textarea
+        className="output-note-textarea"
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder="记录你的想法、引用计划、灵感..."
+        rows={3}
+      />
     </div>
   );
 };

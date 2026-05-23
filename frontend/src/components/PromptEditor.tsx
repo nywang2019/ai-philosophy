@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   fetchPrompts,
   updatePrompt,
@@ -8,6 +8,8 @@ import {
 import {
   getAllCustomModules,
   updateCustomModule,
+  resetCustomPrompt,
+  saveAsDefaultPrompt,
 } from "../services/customModuleStore";
 
 const PromptEditor: React.FC = () => {
@@ -18,6 +20,7 @@ const PromptEditor: React.FC = () => {
   const [editText, setEditText] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const initializedRef = useRef(false);
 
   const loadAll = useCallback(async () => {
     try {
@@ -31,11 +34,12 @@ const PromptEditor: React.FC = () => {
       }));
       const merged = [...data, ...customs];
       setAllPrompts(merged);
-      if (merged.length > 0 && !selectedId) {
+      if (merged.length > 0 && !initializedRef.current) {
         const first = merged[0];
         setSelectedId(first.moduleId);
         setEditText(first.templateText);
         setIsCustom(!!(first as { _isCustom?: boolean })._isCustom);
+        initializedRef.current = true;
       }
     } catch {
       setMessage({ type: "error", text: "加载提示词失败" });
@@ -78,22 +82,42 @@ const PromptEditor: React.FC = () => {
 
   const handleReset = async () => {
     if (!selectedId) return;
-    if (isCustom) return; // 自定义模块无默认值
     if (!confirm("确定要重置为默认提示词吗？当前修改将丢失。")) return;
     setSaving(true);
     setMessage(null);
     try {
-      await resetPrompt(selectedId);
-      await loadAll();
-      setMessage({ type: "success", text: "已重置为默认值" });
-      const refreshed = await fetchPrompts();
-      const found = refreshed.find((p) => p.moduleId === selectedId);
+      if (isCustom) {
+        resetCustomPrompt(selectedId);
+        setMessage({ type: "success", text: "已重置为默认值" });
+      } else {
+        await resetPrompt(selectedId);
+        setMessage({ type: "success", text: "已重置为默认值" });
+      }
+      loadAll();
+      // 刷新编辑区
+      const data = await fetchPrompts();
+      const customs = getAllCustomModules().map((m) => ({
+        moduleId: m.moduleId,
+        moduleName: m.moduleName,
+        templateText: m.templateText,
+        _isCustom: true as const,
+      }));
+      const merged = [...data, ...customs];
+      setAllPrompts(merged);
+      const found = merged.find((p) => p.moduleId === selectedId);
       if (found) setEditText(found.templateText);
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "重置失败" });
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveAsDefault = () => {
+    if (!selectedId || !isCustom) return;
+    saveAsDefaultPrompt(selectedId);
+    setMessage({ type: "success", text: "已设为默认提示词" });
+    setTimeout(() => setMessage(null), 2000);
   };
 
   return (
@@ -134,15 +158,22 @@ const PromptEditor: React.FC = () => {
                 {isCustom && "✦ "}{allPrompts.find((p) => p.moduleId === selectedId)?.moduleName || ""}
               </span>
               <div className="prompt-editor-actions">
-                {!isCustom && (
+                {isCustom && (
                   <button
                     className="btn-reset"
-                    onClick={handleReset}
-                    disabled={saving}
+                    onClick={handleSaveAsDefault}
+                    style={{ borderColor: "#389e0d", color: "#389e0d" }}
                   >
-                    重置默认
+                    设为默认
                   </button>
                 )}
+                <button
+                  className="btn-reset"
+                  onClick={handleReset}
+                  disabled={saving}
+                >
+                  重置默认
+                </button>
                 <button
                   className="btn-save-prompt"
                   onClick={handleSave}

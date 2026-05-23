@@ -18,6 +18,7 @@ export interface GenerateResult {
   moduleName: string;
   result: Record<string, unknown>;
   duration: number;
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number } | null;
 }
 
 export interface ModuleInfo {

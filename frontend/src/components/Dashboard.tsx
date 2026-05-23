@@ -411,8 +411,9 @@ const FavBars: React.FC<{ data: ModuleStats[] }> = ({ data }) => {
 };
 
 // ===== 主仪表盘 =====
-const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void }> = ({ onHistorySelect }) => {
-  const stats = useMemo(() => computeAnalytics(), []);
+const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void; onViewProject?: () => void }> = ({ onHistorySelect, onViewProject }) => {
+  const [range, setRange] = useState(30);
+  const stats = useMemo(() => computeAnalytics(range), [range]);
   const hourMax = Math.max(...stats.hourStats.map((h) => h.count), 1);
   const weekdayMax = Math.max(...stats.weekdayStats.map((w) => w.count), 1);
   const [insight, setInsight] = useState<string | null>(null);
@@ -464,6 +465,17 @@ const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void }> =
             ? `基于 ${stats.totalSessions} 次会话数据的统计分析`
             : "暂无数据，开始使用系统后将自动生成统计"}
         </span>
+        <div className="dash-range-bar">
+          {[7, 30, 90, 0].map((r) => (
+            <span
+              key={r}
+              className={`dash-range-btn ${range === r ? "active" : ""}`}
+              onClick={() => setRange(r)}
+            >
+              {r === 0 ? "全部" : `${r}天`}
+            </span>
+          ))}
+        </div>
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           {stats.totalSessions > 0 && (
             <button
@@ -525,10 +537,13 @@ const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void }> =
         <StatCard label="日均使用" value={stats.averagePerDay} sub="次/天" />
         <StatCard label="最长连续" value={`${stats.longestStreak}天`} sub="连续使用天数" color="#7c3aed" />
         <StatCard label="收藏率" value={`${stats.favoriteRate}%`} sub={`${stats.favoriteSessions} 个已收藏`} color="#f59e0b" />
+        <StatCard label="笔记率" value={`${stats.noteRate}%`} sub={`${stats.noteSessions} 条有笔记`} color="#0891b2" />
         <StatCard label="置顶率" value={`${stats.pinRate}%`} sub={`${stats.pinnedSessions} 个已置顶`} />
         <StatCard label="总生成量" value={`${(stats.totalWordsGenerated / 1000).toFixed(1)}k`} sub="字符数" color="#389e0d" />
+        <StatCard label="总Token" value={`${(stats.totalTokens / 1000).toFixed(1)}k`} sub="累计消耗" color="#0891b2" />
         <StatCard label="平均输入" value={`${stats.averageInputLen}字`} sub={`累计输入 ${(stats.totalInputChars / 1000).toFixed(1)}k 字`} />
         <StatCard label="存储占用" value={`${(stats.storageBytes / 1024).toFixed(1)}KB`} sub="本地数据量" />
+        <StatCard label="研究项目" value={stats.totalProjects} sub="个项目" color="#7c3aed" />
       </div>
 
       {/* 图表行 */}
@@ -587,7 +602,7 @@ const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void }> =
         </div>
       </div>
 
-      {/* 第五行：标签 + 词频 */}
+      {/* 第五行：标签 + 最近活动 */}
       <div className="dash-charts">
         <div className="dash-card">
           <div className="dash-card-title">标签统计</div>
@@ -598,20 +613,39 @@ const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void }> =
           )}
         </div>
         <div className="dash-card">
+          <div className="dash-card-title">最近活动</div>
+          <RecentActivity sessions={stats.recentSessions} onSelect={onHistorySelect} />
+        </div>
+      </div>
+
+      {/* 项目 + 词频 */}
+      <div className="dash-charts">
+        {stats.projectStats.length > 0 && (
+          <div className="dash-card">
+            <div className="dash-card-title">研究项目</div>
+            <div className="dash-activity">
+              {stats.projectStats.map(p => (
+                <div key={p.project.id} className="dash-activity-item dash-activity-clickable" onClick={onViewProject}>
+                  <div className="dash-activity-left">
+                    <span>{p.project.icon}</span>
+                    <div>
+                      <div className="dash-activity-title" style={{ maxWidth: "unset" }}>{p.project.name}</div>
+                      <div className="dash-activity-meta">{p.project.description}</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 12, color: "var(--muted)", flexShrink: 0 }}>{p.sessionCount} 次会话</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="dash-card">
           <div className="dash-card-title">高频主题词</div>
           {stats.titleWords.length > 0 ? (
             <WordCloud words={stats.titleWords} />
           ) : (
             <div className="dash-empty">暂无数据</div>
           )}
-        </div>
-      </div>
-
-      {/* 第六行：最近活动 */}
-      <div className="dash-charts">
-        <div className="dash-card">
-          <div className="dash-card-title">最近活动</div>
-          <RecentActivity sessions={stats.recentSessions} onSelect={onHistorySelect} />
         </div>
       </div>
     </div>

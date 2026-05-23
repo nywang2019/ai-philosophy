@@ -14,10 +14,19 @@ export interface GenerateRequest {
   customPrompt?: string;
 }
 
+export interface LLMResult {
+  content: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
 export async function callLLM(
   prompt: string,
   config: LLMConfig
-): Promise<string> {
+): Promise<LLMResult> {
   const url = config.endpoint.endsWith("/v1/chat/completions")
     ? config.endpoint
     : config.endpoint.replace(/\/$/, "") + "/v1/chat/completions";
@@ -51,6 +60,7 @@ export async function callLLM(
 
   const data = (await response.json()) as {
     choices: { message: { content: string } }[];
+    usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
   };
 
   const content = data.choices?.[0]?.message?.content;
@@ -58,7 +68,14 @@ export async function callLLM(
     throw new Error("LLM returned empty response");
   }
 
-  return content;
+  return {
+    content,
+    usage: data.usage ? {
+      promptTokens: data.usage.prompt_tokens,
+      completionTokens: data.usage.completion_tokens,
+      totalTokens: data.usage.total_tokens,
+    } : undefined,
+  };
 }
 
 // 尝试从LLM返回的文本中提取JSON

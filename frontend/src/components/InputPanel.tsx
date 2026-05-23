@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { ModuleConfig, ModuleField } from "../modules/moduleConfig";
 import WelcomeAnimation from "./WelcomeAnimation";
 import VoiceInput from "./VoiceInput";
+import { getActiveProject } from "../services/projectStore";
 
 interface Props {
   config: ModuleConfig | null;
@@ -11,6 +12,8 @@ interface Props {
   onSubmit: (inputs: Record<string, unknown>) => void;
   loading: boolean;
   initialValues?: Record<string, unknown> | null;
+  batchMode: boolean;
+  onToggleBatch: () => void;
 }
 
 const TagInput: React.FC<{
@@ -50,7 +53,7 @@ const TagInput: React.FC<{
   );
 };
 
-const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onToggleCompare, onSubmit, loading, initialValues }) => {
+const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onToggleCompare, onSubmit, loading, initialValues, batchMode, onToggleBatch }) => {
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [tagValues, setTagValues] = useState<Record<string, string[]>>({});
 
@@ -80,14 +83,6 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
           <h2 className="welcome-title">文史哲AI多模块生成系统</h2>
           <WelcomeAnimation />
           <p className="welcome-desc">请从左侧模块列表中选择一个，开始你的思想实验。</p>
-          <div className="welcome-tags">
-            <span className="welcome-tag">📜 典故穿越</span>
-            <span className="welcome-tag">💬 哲学家群聊</span>
-            <span className="welcome-tag">🔄 历史反事实</span>
-            <span className="welcome-tag">📖 古文翻译</span>
-            <span className="welcome-tag">🎭 文学对话</span>
-            <span className="welcome-tag">🔍 偏见检测</span>
-          </div>
         </div>
       </div>
     );
@@ -171,11 +166,16 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
           ? <><span className="compare-badge-a">● {config.moduleName}</span> vs <span className="compare-badge-b">▲ {secondConfig.moduleName}</span></>
           : config.moduleName
         }
+        {(() => { const ap = getActiveProject(); return ap ? <span className="active-project-badge">{ap.icon} {ap.name}</span> : null; })()}
       </div>
       <div className="compare-toggle-row">
         <label className="compare-toggle">
           <input type="checkbox" checked={compareMode} onChange={onToggleCompare} />
           <span>对比模式</span>
+        </label>
+        <label className="compare-toggle">
+          <input type="checkbox" checked={batchMode} onChange={onToggleBatch} />
+          <span>批量模式</span>
         </label>
         {compareMode && !secondConfig && (
           <span className="compare-hint">请在左侧模块列表选择第二个模块（显示为 ▲）</span>
