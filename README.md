@@ -40,18 +40,25 @@
 ## 系统截图
 
 <div align="center">
+  <p align="center"><b>主页界面</b></p>
   <img src="screenshots/1.png" width="100%" alt="主页界面" />
   <br/><br/>
+  <p align="center"><b>生成结果</b></p>
   <img src="screenshots/2.png" width="100%" alt="生成结果" />
   <br/><br/>
+  <p align="center"><b>仪表盘全景</b></p>
   <img src="screenshots/3.png" width="100%" alt="仪表盘全景" />
   <br/><br/>
+  <p align="center"><b>思维导图</b></p>
   <img src="screenshots/4.png" width="100%" alt="思维导图" />
   <br/><br/>
+  <p align="center"><b>研究项目</b></p>
   <img src="screenshots/5.png" width="100%" alt="研究项目" />
   <br/><br/>
+  <p align="center"><b>对话历史</b></p>
   <img src="screenshots/6.png" width="100%" alt="对话历史" />
   <br/><br/>
+  <p align="center"><b>知识图谱</b></p>
   <img src="screenshots/7.png" width="100%" alt="知识图谱" />
 </div>
 
