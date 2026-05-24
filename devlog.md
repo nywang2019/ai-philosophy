@@ -1,5 +1,46 @@
 # 开发日志
 
+## 2026-05-24 - v11.0 全文搜索 + 知识图谱 + AI综述 + 引用导出 + 提示词版本管理
+
+### 修改文件
+- `frontend/src/services/searchHistory.ts` - 全文搜索引擎（分词匹配+权重排序+上下文摘要）
+- `frontend/src/components/SearchPanel.tsx` - 搜索UI面板（防抖+结果列表+点击跳转）
+- `frontend/src/services/knowledgeGraph.ts` - 知识图谱引擎（实体提取+共现关系构建）
+- `frontend/src/components/KnowledgeGraph.tsx` - SVG环形图谱可视化（节点+边+交互）
+- `frontend/src/components/KnowledgeGraphPanel.tsx` - 图谱面板（模态框+图例）
+- `frontend/src/services/promptVersionStore.ts` - 提示词版本存储（CRUD+去重+上限）
+- `frontend/src/components/PromptEditor.tsx` - 版本历史UI（查看/恢复/删除/备注）
+- `frontend/src/components/ProjectPanel.tsx` - AI综述生成+保存+查看+删除
+- `frontend/src/services/projectStore.ts` - ResearchProject新增summary字段
+- `frontend/src/components/OutputPanel.tsx` - 添加学术引用导出
+- `frontend/src/services/historyStore.ts` - moduleName.trim()迁移+预防
+- `frontend/src/services/customModuleStore.ts` - moduleName.trim()迁移+resetCustomPrompt+saveAsDefaultPrompt
+- `frontend/src/components/CustomModulePanel.tsx` - moduleName.trim()，图标选择器
+- `frontend/src/services/analytics.ts` - 高频词提取修复（按分隔符拆分+文言虚词停用），noteStats/projectStats/tokenStats
+- `frontend/src/components/ResultRenderer.tsx` - ErrorBoundary+全渲染器类型守卫
+- `frontend/src/components/HistoryPanel.tsx` - 模块筛选栏
+- `frontend/src/App.tsx` - 知识图谱+搜索面板+主页按钮+handleBackToHome修复
+- `frontend/src/App.css` - 知识图谱/搜索/版本历史/模块筛选样式
+- `CHANGELOG.md` - v11.0更新日志
+- `README.md` - v11.0功能列表
+- `TEST.md` - v11.0测试清单和验证结果
+- `devlog.md` - 本文件
+
+### 修改内容
+参见 CHANGELOG.md v11.0 条目
+
+### 风险
+- 知识图谱依赖已知实体词典，未收录的实体无法显示
+- 提示词版本上限10个，超出后最旧版本被丢弃
+
+### 未完成项
+- 无
+
+### 下一步建议
+继续按用户需求迭代
+
+---
+
 ## 2026-05-22 - v10.0 研究项目 + 批量生成 + AI标签 + 会话笔记 + Token统计
 
 ### 修改文件
