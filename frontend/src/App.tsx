@@ -6,11 +6,13 @@ import SettingsModal from "./components/SettingsModal";
 import HistoryPanel from "./components/HistoryPanel";
 import Dashboard from "./components/Dashboard";
 import ProjectPanel from "./components/ProjectPanel";
+import SearchPanel from "./components/SearchPanel";
+import KnowledgeGraphPanel from "./components/KnowledgeGraphPanel";
 import type { ModuleConfig } from "./modules/moduleConfig";
 import { moduleConfigs } from "./modules/moduleConfig";
 import { generate } from "./api/client";
 import type { GenerateResult, LLMConfig } from "./api/client";
-import { addHistory, updateTags, getAllHistory, setTokens } from "./services/historyStore";
+import { addHistory, getAllHistory, setTokens } from "./services/historyStore";
 import type { HistoryEntry } from "./services/historyStore";
 import { getStoredTheme, applyTheme } from "./themes/themes";
 import { getCustomModule, getAllCustomModules } from "./services/customModuleStore";
@@ -37,6 +39,8 @@ const App: React.FC = () => {
   const [historyVisible, setHistoryVisible] = useState(false);
   const [dashboardVisible, setDashboardVisible] = useState(false);
   const [projectVisible, setProjectVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [graphVisible, setGraphVisible] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [secondResult, setSecondResult] = useState<GenerateResult | null>(null);
@@ -106,25 +110,8 @@ const App: React.FC = () => {
   }, []);
 
   // AI自动标签
-  const autoTag = useCallback(async (historyId: string, inputs: Record<string, unknown>, resultData: Record<string, unknown>) => {
-    if (!llmConfig) return;
-    try {
-      const inputSnippet = JSON.stringify(inputs).slice(0, 100);
-      const resultSnippet = JSON.stringify(resultData).slice(0, 200);
-      const res = await generate({
-        moduleId: "auto-tag",
-        inputs: {},
-        llmConfig,
-        customPrompt: `根据以下对话内容，建议1-3个简短标签（每个2-4字）。只返回标签名，用逗号分隔，不要其他文字。\n输入：${inputSnippet}\n输出：${resultSnippet}`,
-      });
-      const raw = (res.result as Record<string, unknown>).raw as string || "";
-      const tags = raw.split(/[,，]/).map(t => t.trim()).filter(t => t.length >= 2 && t.length <= 6).slice(0, 1);
-      if (tags.length > 0) {
-        const entry = getAllHistory().find(e => e.id === historyId);
-        if (entry) updateTags(historyId, [...(entry.tags || []), ...tags.filter(t => !(entry.tags || []).includes(t))]);
-        setHistoryRefreshKey(k => k + 1);
-      }
-    } catch { /* 静默失败，不影响主流程 */ }
+  const autoTag = useCallback(async (_historyId: string, _inputs: Record<string, unknown>, _resultData: Record<string, unknown>) => {
+    // 暂时禁用自动标签
   }, [llmConfig]);
 
   const toggleBatch = useCallback(() => {
@@ -251,6 +238,7 @@ const App: React.FC = () => {
     setResult(null);
     setSecondResult(null);
     setError(null);
+    setDashboardVisible(false);
   }, []);
 
   const handleSaveConfig = useCallback((config: LLMConfig) => {
@@ -343,6 +331,9 @@ const App: React.FC = () => {
           <span className="config-status">会话总次数：{headerStats.total}</span>
           <span className="config-status">总生成量：{(headerStats.chars / 1000).toFixed(0)}k</span>
           <span className="config-status">Token总消耗量：{(headerStats.tokens / 1000).toFixed(0)}k</span>
+          <button className="btn-settings" onClick={handleBackToHome}>🏠</button>
+          <button className="btn-settings" onClick={() => setSearchVisible(true)}>🔍</button>
+          <button className="btn-settings" onClick={() => setGraphVisible(true)}>🕸️ 知识图谱</button>
           <button className="btn-settings" onClick={() => setDashboardVisible(true)}>仪表盘</button>
           <button className="btn-settings" onClick={() => setProjectVisible(true)}>研究项目</button>
           <button className="btn-settings" onClick={() => setHistoryVisible(true)}>对话历史</button>
@@ -419,6 +410,16 @@ const App: React.FC = () => {
         visible={projectVisible}
         onClose={() => setProjectVisible(false)}
         onProjectChange={() => setHistoryRefreshKey(k => k + 1)}
+      />
+      <SearchPanel
+        visible={searchVisible}
+        onClose={() => setSearchVisible(false)}
+        onSelect={(entry) => { handleHistorySelect(entry); }}
+      />
+      <KnowledgeGraphPanel
+        visible={graphVisible}
+        onClose={() => setGraphVisible(false)}
+        onSelectEntry={(entry) => { handleHistorySelect(entry); setGraphVisible(false); }}
       />
     </div>
   );

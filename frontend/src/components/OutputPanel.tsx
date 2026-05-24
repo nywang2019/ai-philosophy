@@ -272,6 +272,18 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
     setShowExport(false);
   };
 
+  const handleCopyCitation = () => {
+    if (!result) return;
+    setShowExport(false);
+    const date = new Date().toISOString().slice(0, 10);
+    const title = result.moduleName;
+    const citation = `[1] 文史哲AI生成系统. ${title}[EB/OL]. (${date})[${date}]. https://ai-philosophy.local/.`;
+    navigator.clipboard.writeText(citation).then(() => {
+      setShareMsg("引用已复制");
+      setTimeout(() => setShareMsg(null), 2000);
+    }).catch(() => setShareMsg("复制失败"));
+  };
+
   const handleExportPNG = () => {
     if (!result) return;
     setShowExport(false);
@@ -535,6 +547,7 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
               <div className="export-option" onClick={handleExportMD}>📝 Markdown</div>
               <div className="export-option" onClick={handleExportHTML}>🌐 HTML</div>
               <div className="export-option" onClick={handleExportPNG}>🖼️ 图片</div>
+              <div className="export-option" onClick={handleCopyCitation}>📖 引用</div>
             </div>
           )}
         </div>

@@ -26,12 +26,18 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
   const [allTags, setAllTags] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [filterModule, setFilterModule] = useState<string | null>(null);
   const [filterFav, setFilterFav] = useState(false);
   const [filterNotes, setFilterNotes] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [tagMenuId, setTagMenuId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const allModuleNames = useCallback(() => {
+    const names = new Set(getAllHistory().map(e => e.moduleName));
+    return [...names].sort();
+  }, []);
 
   const load = useCallback(() => {
     setEntries(getAllHistory());
@@ -149,6 +155,7 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
     if (filterFav && !e.favorite) return false;
     if (filterNotes && !e.note) return false;
     if (filterTag && !(e.tags || []).includes(filterTag)) return false;
+    if (filterModule && e.moduleName !== filterModule) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -217,6 +224,26 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
             </button>
           </div>
         )}
+        {/* 模块筛选栏 */}
+        {allModuleNames().length > 1 && (
+          <div className="history-tag-filter">
+            <span
+              className={`history-filter-tag ${filterModule === null ? "active" : ""}`}
+              onClick={() => setFilterModule(null)}
+            >
+              全部模块
+            </span>
+            {allModuleNames().map((name) => (
+              <span
+                key={name}
+                className={`history-filter-tag ${filterModule === name ? "active" : ""}`}
+                onClick={() => setFilterModule(filterModule === name ? null : name)}
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        )}
         {/* 标签筛选栏 */}
         {allTags.length > 0 && (
           <div className="history-tag-filter">
@@ -224,7 +251,7 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
               className={`history-filter-tag ${filterTag === null ? "active" : ""}`}
               onClick={() => setFilterTag(null)}
             >
-              全部
+              全部标签
             </span>
             {allTags.map((tag) => (
               <span

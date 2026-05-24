@@ -11,6 +11,7 @@ import {
   resetCustomPrompt,
   saveAsDefaultPrompt,
 } from "../services/customModuleStore";
+import { saveVersion, getVersions, deleteVersion, updateVersionNote, type PromptVersion } from "../services/promptVersionStore";
 
 const PromptEditor: React.FC = () => {
   const [builtIn, setBuiltIn] = useState<PromptTemplateData[]>([]);
@@ -20,6 +21,8 @@ const PromptEditor: React.FC = () => {
   const [editText, setEditText] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showVersions, setShowVersions] = useState(false);
+  const [versions, setVersions] = useState<PromptVersion[]>([]);
   const initializedRef = useRef(false);
 
   const loadAll = useCallback(async () => {
@@ -58,6 +61,8 @@ const PromptEditor: React.FC = () => {
       setIsCustom(!!(p as { _isCustom?: boolean })._isCustom);
     }
     setMessage(null);
+    // 切换模块时刷新版本列表
+    if (showVersions) setVersions(getVersions(id));
   };
 
   const handleSave = async () => {
@@ -67,11 +72,12 @@ const PromptEditor: React.FC = () => {
     try {
       if (isCustom) {
         updateCustomModule(selectedId, { templateText: editText });
-        setMessage({ type: "success", text: "保存成功" });
       } else {
         await updatePrompt(selectedId, editText);
-        setMessage({ type: "success", text: "保存成功" });
       }
+      saveVersion(selectedId, editText);
+      if (showVersions) setVersions(getVersions(selectedId));
+      setMessage({ type: "success", text: "保存成功" });
       loadAll();
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "保存失败" });
@@ -175,6 +181,16 @@ const PromptEditor: React.FC = () => {
                   重置默认
                 </button>
                 <button
+                  className="btn-reset"
+                  onClick={() => {
+                    if (selectedId) setVersions(getVersions(selectedId));
+                    setShowVersions(!showVersions);
+                  }}
+                  style={{ borderColor: "#0891b2", color: "#0891b2" }}
+                >
+                  版本
+                </button>
+                <button
                   className="btn-save-prompt"
                   onClick={handleSave}
                   disabled={saving}
@@ -186,6 +202,65 @@ const PromptEditor: React.FC = () => {
             {message && (
               <div className={`prompt-editor-msg ${message.type}`}>
                 {message.text}
+              </div>
+            )}
+            {showVersions && (
+              <div className="prompt-versions">
+                <div className="prompt-versions-header">
+                  <span>版本历史（{versions.length}）</span>
+                  <button className="btn-reset" onClick={() => setShowVersions(false)}>关闭</button>
+                </div>
+                {versions.length === 0 ? (
+                  <div className="prompt-versions-empty">暂无历史版本</div>
+                ) : (
+                  versions.map((v, i) => (
+                    <div key={v.versionId} className="prompt-version-item">
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }} onClick={async () => {
+                          if (!selectedId) return;
+                          setEditText(v.templateText);
+                          setShowVersions(false);
+                          setSaving(true);
+                          if (isCustom) {
+                            updateCustomModule(selectedId, { templateText: v.templateText });
+                            // 刷新自定义模块数据
+                            const customs = getAllCustomModules().map((m) => ({
+                              moduleId: m.moduleId, moduleName: m.moduleName,
+                              templateText: m.templateText, _isCustom: true as const,
+                            }));
+                            const data = await fetchPrompts();
+                            setAllPrompts([...data, ...customs]);
+                          } else {
+                            await updatePrompt(selectedId, v.templateText);
+                          }
+                          setSaving(false);
+                          setMessage({ type: "success", text: `已恢复版本 #${i + 1}` });
+                          setTimeout(() => setMessage(null), 2000);
+                        }}>
+                        <span className="prompt-version-num">#{i + 1}</span>
+                        <span className="prompt-version-time">{new Date(v.timestamp).toLocaleString("zh-CN")}</span>
+                        {v.note ? (
+                          <span className="prompt-version-note" title={v.note}>📝</span>
+                        ) : (
+                          <span className="prompt-version-note" title="添加备注" onClick={(e) => {
+                            e.stopPropagation();
+                            const note = prompt("添加备注：", v.note);
+                            if (note !== null && selectedId) { updateVersionNote(selectedId, v.versionId, note); setVersions(getVersions(selectedId)); }
+                          }} style={{ opacity: 0.3 }}>✏️</span>
+                        )}
+                      </div>
+                      <button
+                        className="btn-reset"
+                        style={{ fontSize: 10, padding: "1px 4px" }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!selectedId) return;
+                          deleteVersion(selectedId, v.versionId);
+                          setVersions(getVersions(selectedId));
+                        }}
+                      >×</button>
+                    </div>
+                  ))
+                )}
               </div>
             )}
             <textarea

@@ -1,5 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Component } from "react";
 import type { GenerateResult } from "../api/client";
+
+// 错误边界：兜底捕获渲染异常
+class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return <div className="rr-generic"><div className="rr-generic-section"><p className="rr-original-text" style={{ color: "var(--error-text)" }}>渲染出错，请切换到 JSON 或 MD 视图查看原始数据</p></div></div>;
+    }
+    return this.props.children;
+  }
+}
 
 interface Props {
   result: GenerateResult;
@@ -254,7 +266,7 @@ const TimelineView: React.FC<{ data: Record<string, unknown> }> = ({ data }) => 
                 <strong>{branch.name}</strong>
               </div>
               <div className="rr-branch-timeline">
-                {branch.timeline.map((t, j) => (
+                {(Array.isArray(branch.timeline) ? branch.timeline : []).map((t, j) => (
                   <div key={j} className="rr-branch-node">
                     <div className="rr-branch-year">{t.year}</div>
                     <div className="rr-branch-event">{t.event}</div>
@@ -273,19 +285,19 @@ const TimelineView: React.FC<{ data: Record<string, unknown> }> = ({ data }) => 
 
 // ===== 分析报告渲染 =====
 const AnalysisReport: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
-  const imagery = data.imagery as string[];
-  const emotionCurve = data.emotionCurve as Array<{
+  const imagery = Array.isArray(data.imagery) ? data.imagery as string[] : [];
+  const emotionCurve = Array.isArray(data.emotionCurve) ? data.emotionCurve as Array<{
     position: string;
     value: number;
     description: string;
-  }>;
-  const emotionTags = data.emotionTags as string[];
+  }> : [];
+  const emotionTags = Array.isArray(data.emotionTags) ? data.emotionTags as string[] : [];
   const summary = data.summary as string;
   const poem = data.poem as string;
 
   const narrativeStance = data.narrativeStance as string;
-  const biasPoints = data.biasPoints as string[];
-  const ignoredPerspectives = data.ignoredPerspectives as string[];
+  const biasPoints = Array.isArray(data.biasPoints) ? data.biasPoints as string[] : [];
+  const ignoredPerspectives = Array.isArray(data.ignoredPerspectives) ? data.ignoredPerspectives as string[] : [];
   const neutralRewrite = data.neutralRewrite as string;
   const originalText = data.originalText as string;
 
@@ -398,8 +410,12 @@ const AnalysisReport: React.FC<{ data: Record<string, unknown> }> = ({ data }) =
 
 // ===== 商业分析渲染 =====
 const BusinessProfile: React.FC<{ data: Record<string, unknown> }> = ({ data }) => {
-  const swot = data.swot as Record<string, string[]> | undefined;
-  const products = data.products as string[] | undefined;
+  // 数据结构不匹配时回退
+  if (!data.companyName && !data.school && !data.swot) {
+    return <GenericStructured data={data} />;
+  }
+  const swot = (typeof data.swot === "object" && data.swot !== null) ? data.swot as Record<string, string[]> : undefined;
+  const products = Array.isArray(data.products) ? data.products as string[] : undefined;
   const companyName = data.companyName as string;
   const coreConcept = data.coreConcept as string;
   const organization = data.organization as string;
@@ -659,20 +675,20 @@ const ResultRenderer: React.FC<Props> = ({ result }) => {
       return <div className="rr-generic"><div className="rr-generic-section"><p className="rr-original-text" style={{ whiteSpace: "pre-wrap" }}>{d.raw as string}</p></div></div>;
     }
 
-    // 自定义模块：根据输出结构自动匹配渲染器
-    if ("dialogues" in d && Array.isArray(d.dialogues)) {
+    // 自定义模块：根据输出结构自动匹配渲染器（需同时满足键存在+类型匹配）
+    if ("dialogues" in d && Array.isArray(d.dialogues) && (d.dialogues as unknown[]).length > 0) {
       return <ChatBubbles data={d} />;
     }
-    if ("branches" in d || "eras" in d) {
+    if ((("branches" in d && Array.isArray(d.branches)) || ("eras" in d && Array.isArray(d.eras)))) {
       return <TimelineView data={d} />;
     }
-    if ("swot" in d || "companyName" in d) {
+    if (("swot" in d && typeof d.swot === "object") || ("companyName" in d && typeof d.companyName === "string")) {
       return <BusinessProfile data={d} />;
     }
-    if ("conversions" in d && Array.isArray(d.conversions)) {
+    if ("conversions" in d && Array.isArray(d.conversions) && (d.conversions as unknown[]).length > 0) {
       return <ConversionView data={d} />;
     }
-    if ("emotionCurve" in d || "biasPoints" in d || "intensityCurve" in d) {
+    if (("emotionCurve" in d && Array.isArray(d.emotionCurve)) || ("biasPoints" in d && Array.isArray(d.biasPoints)) || ("intensityCurve" in d && Array.isArray(d.intensityCurve))) {
       return <AnalysisReport data={d} />;
     }
     // 多版本检测：至少有3个以Version结尾的字段
@@ -687,7 +703,7 @@ const ResultRenderer: React.FC<Props> = ({ result }) => {
     return <GenericStructured data={d} />;
   };
 
-  return <>{detectRenderer()}</>;
+  return <ErrorBoundary>{detectRenderer()}</ErrorBoundary>;
 };
 
 export default ResultRenderer;

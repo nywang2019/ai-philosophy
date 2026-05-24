@@ -302,18 +302,26 @@ export function computeAnalytics(daysBack = 0): Analytics {
     return Math.round((sum / (end - start)) * 10) / 10;
   });
 
-  // 标题高频词（从历史标题提取2-4字词）
+  // 高频词（从用户输入文本和标签中提取自然词）
   const wordMap: Record<string, number> = {};
-  const stopWords = new Set(["的","了","在","是","我","有","和","就","不","人","都","一","个","上","也","很","到","说","要","去","你","会","着","没有","看","好","自己","这","他","她","它","们","那","些","什么","怎么","如何","怎么","为什么","因为","所以","但是","如果","可以","已经","还","又","再","才","刚","就","只","被","把","从","让","对","与","或","等","及","其","为"]);
+  const stopWords = new Set(["的","了","在","是","我","有","和","就","不","人","都","一","个","上","也","很","到","说","要","去","你","会","着","没有","看","好","自己","这","他","她","它","们","那","些","什么","怎么","如何","为什么","因为","所以","但是","如果","可以","已经","还","又","再","才","刚","就","只","被","把","从","让","对","与","或","等","及","其","为","而","之","以","于","则","所","者","也","哉","乎","矣","焉","耳"]);
+  // 从输入文本中提取完整片段（按常见分隔符拆分）
+  const delimiters = /[·，。！？、：；\s→—\-…,.!?\n]+/;
   for (const e of all) {
-    const title = e.title;
-    for (let len = 2; len <= 4; len++) {
-      for (let i = 0; i <= title.length - len; i++) {
-        const w = title.slice(i, i + len);
-        if ([...w].every((c) => !stopWords.has(c) && /[一-龥]/.test(c))) {
-          wordMap[w] = (wordMap[w] || 0) + 1;
+    // 输入文本
+    for (const v of Object.values(e.inputs)) {
+      if (typeof v === "string" && v.trim()) {
+        const parts = v.split(delimiters).filter(p => p.length >= 2 && p.length <= 6);
+        for (const p of parts) {
+          if (!stopWords.has(p) && /[一-龥]/.test(p)) {
+            wordMap[p] = (wordMap[p] || 0) + 1;
+          }
         }
       }
+    }
+    // 标签本身就是人肉精选的词
+    for (const t of e.tags || []) {
+      wordMap[t] = (wordMap[t] || 0) + 1;
     }
   }
   const titleWords: TitleWord[] = Object.entries(wordMap)

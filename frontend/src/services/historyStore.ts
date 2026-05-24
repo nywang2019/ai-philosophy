@@ -25,7 +25,19 @@ const MAX_ENTRIES = 200;
 function loadAll(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as HistoryEntry[];
+    if (raw) {
+      const entries = JSON.parse(raw) as HistoryEntry[];
+      // 迁移：清理首尾空格
+      let changed = false;
+      for (const e of entries) {
+        if (e.moduleName !== e.moduleName.trim()) {
+          e.moduleName = e.moduleName.trim();
+          changed = true;
+        }
+      }
+      if (changed) saveAll(entries);
+      return entries;
+    }
   } catch {
     // ignore
   }
@@ -115,7 +127,7 @@ export function addHistory(
     id: genId(),
     title: autoTitle(moduleName, inputs),
     moduleId,
-    moduleName,
+    moduleName: moduleName.trim(),
     inputs,
     result,
     llmConfig,

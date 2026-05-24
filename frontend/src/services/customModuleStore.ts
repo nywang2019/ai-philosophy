@@ -14,12 +14,17 @@ export interface CustomModule {
 
 const STORAGE_KEY = "ai-philosophy-custom-modules";
 
-// 迁移：为已有模块补充 defaultTemplateText
+// 迁移：为已有模块补充 defaultTemplateText，清理首尾空格
 function migrate(mods: CustomModule[]): boolean {
   let changed = false;
   for (const m of mods) {
     if (!m.defaultTemplateText) {
       m.defaultTemplateText = m.templateText;
+      changed = true;
+    }
+    const trimmed = m.moduleName.trim();
+    if (m.moduleName !== trimmed) {
+      m.moduleName = trimmed;
       changed = true;
     }
   }

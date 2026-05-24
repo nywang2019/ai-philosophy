@@ -5,6 +5,7 @@ export interface ResearchProject {
   name: string;
   description: string;
   icon: string;
+  summary?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -75,6 +76,16 @@ export function getActiveProjectId(): string | null {
 export function setActiveProject(id: string | null): void {
   if (id) localStorage.setItem(ACTIVE_KEY, id);
   else localStorage.removeItem(ACTIVE_KEY);
+}
+
+export function saveProjectSummary(id: string, summary: string): boolean {
+  const all = loadAll();
+  const found = all.find(p => p.id === id);
+  if (!found) return false;
+  found.summary = summary;
+  found.updatedAt = Date.now();
+  saveAll(all);
+  return true;
 }
 
 export function clearActiveProject(): void {

@@ -6,6 +6,7 @@ import {
   getActiveProjectId,
   setActiveProject,
   clearActiveProject,
+  saveProjectSummary,
   type ResearchProject,
 } from "../services/projectStore";
 import { getAllHistory, setSessionProject, getSessionsByProject, type HistoryEntry } from "../services/historyStore";
@@ -22,6 +23,8 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
   const [editing, setEditing] = useState<Partial<ResearchProject> | null>(null);
   const [viewSessions, setViewSessions] = useState<ResearchProject | null>(null);
   const [sessions, setSessions] = useState<HistoryEntry[]>([]);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [viewSummaryId, setViewSummaryId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -77,8 +80,25 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
             <h2>{viewSessions.icon} {viewSessions.name}</h2>
             <button className="modal-close" onClick={onClose}>&times;</button>
           </div>
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--light-border)", display: "flex", gap: 8 }}>
-            <button className="btn-save-prompt" onClick={() => setViewSessions(null)}>返回项目列表</button>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--light-border)", display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="btn-save-prompt" onClick={() => { setViewSessions(null); load(); }}>返回项目列表</button>
+            <button className="btn-save-prompt" style={{ background: "linear-gradient(135deg, #7c3aed, #4a6cf7)" }} onClick={async () => {
+              const cfg = localStorage.getItem("ai-philosophy-llm-config");
+              if (!cfg) { showMsg("请先配置API"); return; }
+              const config = JSON.parse(cfg);
+              setSummaryLoading(true);
+              const content = sessions.map((s, i) => `[${i+1}] 模块:${s.moduleName} 标题:${s.title}\n输入:${JSON.stringify(s.inputs)}\n结果:${JSON.stringify(s.result).slice(0, 800)}`).join("\n\n");
+              const prompt = `你是一位学术研究综述专家。以下是研究项目"${viewSessions.name}"下的${sessions.length}条会话记录。请撰写一篇200-300字的综合研究综述，要求：1）识别核心主题和子主题 2）指出各会话间的逻辑关联 3）发现值得深入的方向 4）语言精炼，有学术洞察力。\n\n${content}`;
+              try {
+                const r = await fetch("/api/generate", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ moduleId:"summary", inputs:{}, llmConfig:config, customPrompt:prompt }) });
+                const d = await r.json();
+                if (d.error) { showMsg("生成失败: "+d.error); } else {
+                  const text = (d.result as Record<string,unknown>).raw as string || JSON.stringify(d.result);
+                  saveProjectSummary(viewSessions.id, text + `\n\n生成时间：${new Date().toLocaleString("zh-CN")}`);
+                }
+              } catch(e) { showMsg("生成失败"); }
+              setSummaryLoading(false);
+            }}>{summaryLoading ? "生成中..." : "🔮 生成综述"}</button>
             <button className="btn-save-prompt" style={{ background: "linear-gradient(135deg, #389e0d, #4caf50)" }} onClick={() => {
               const md = generateProjectDoc(viewSessions, sessions);
               const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
@@ -167,13 +187,31 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{p.description}</div>
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
-                  <button className="btn-save-prompt" onClick={() => handleViewSessions(p)}>会话</button>
+                  <button className="btn-save-prompt" onClick={() => handleViewSessions(p)}>进入会话</button>
+                  {p.summary && (
+                    <button className="btn-save-prompt" style={{ background: "linear-gradient(135deg, #7c3aed, #4a6cf7)" }}
+                      onClick={() => setViewSummaryId(viewSummaryId === p.id ? null : p.id)}>查看综述</button>
+                  )}
                   {activeId !== p.id ? (
-                    <button className="btn-save-prompt" onClick={() => handleSetActive(p.id)}>活跃</button>
+                    <button className="btn-save-prompt" onClick={() => handleSetActive(p.id)}>设为活跃</button>
                   ) : null}
                   <button className="btn-reset" onClick={() => handleDelete(p.id)}>删除</button>
                 </div>
               </div>
+              {viewSummaryId === p.id && p.summary && (
+                <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--code-bg)", borderRadius: 8, fontSize: 13, lineHeight: 1.8, color: "var(--text)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--primary)" }}>🔮 研究综述</span>
+                    <button className="btn-reset" style={{ fontSize: 10, padding: "1px 6px" }} onClick={(e) => {
+                      e.stopPropagation();
+                      saveProjectSummary(p.id, "");
+                      load();
+                      setViewSummaryId(null);
+                    }}>删除</button>
+                  </div>
+                  {p.summary}
+                </div>
+              )}
             </div>
           ))}
         </div>

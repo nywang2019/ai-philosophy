@@ -50,7 +50,7 @@ const CustomModulePanel: React.FC = () => {
     const exists = modules.find((m) => m.moduleId === editing.moduleId);
     if (exists) {
       updateCustomModule(editing.moduleId!, {
-        moduleName: editing.moduleName!,
+        moduleName: editing.moduleName!.trim(),
         icon: (editing as Record<string, unknown>).icon as string || "📦",
         description: editing.description || "",
         fields: editing.fields || [],
@@ -60,7 +60,7 @@ const CustomModulePanel: React.FC = () => {
     } else {
       addCustomModule({
         moduleId: editing.moduleId!,
-        moduleName: editing.moduleName!,
+        moduleName: editing.moduleName!.trim(),
         icon: (editing as Record<string, unknown>).icon as string || "📦",
         description: editing.description || "",
         fields: editing.fields || [],
