@@ -60,6 +60,9 @@
   <br/><br/>
   <p align="center"><b>系统设置</b></p>
   <img src="screenshots/7.png" width="100%" alt="系统设置" />
+  <br/><br/>
+  <p align="center"><b>自定义模块</b></p>
+  <img src="screenshots/8.png" width="100%" alt="自定义模块" />
 </div>
 
 ## 快速开始
