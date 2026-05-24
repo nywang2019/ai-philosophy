@@ -35,6 +35,21 @@
 - **LLM**: OpenAI兼容API抽象层，支持配置任意API endpoint/key/model
 - **存储**: localStorage全量本地存储，无数据库依赖
 
+## 系统截图
+
+<div align="center">
+  <img src="screenshots/3.png" width="48%" alt="仪表盘全景" />&nbsp;
+  <img src="screenshots/1.png" width="48%" alt="主页界面" />
+  <br/>
+  <img src="screenshots/7.png" width="48%" alt="知识图谱" />&nbsp;
+  <img src="screenshots/6.png" width="48%" alt="对话历史" />
+  <br/>
+  <img src="screenshots/4.png" width="48%" alt="思维导图" />&nbsp;
+  <img src="screenshots/5.png" width="48%" alt="研究项目" />
+  <br/>
+  <img src="screenshots/2.png" width="48%" alt="生成结果" />
+</div>
+
 ## 快速开始
 
 ```bash
