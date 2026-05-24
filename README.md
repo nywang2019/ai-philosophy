@@ -2,6 +2,8 @@
 
 统一的文史哲AI生成平台，将10个内置模块整合为可切换的AI应用，同时支持用户创建无限自定义模块，涵盖典故、哲学、历史、文学、宗教等文史哲领域。
 
+> **作者**：nywang2019 &nbsp;|&nbsp; **版本**：v11.0 &nbsp;|&nbsp; **许可证**：All rights reserved
+
 ## 功能模块
 
 ### 10个内置模块
@@ -38,16 +40,16 @@
 ## 系统截图
 
 <div align="center">
-  <img src="screenshots/3.png" width="48%" alt="仪表盘全景" />&nbsp;
-  <img src="screenshots/1.png" width="48%" alt="主页界面" />
+  <img src="screenshots/1.png" width="48%" alt="主页界面" />&nbsp;
+  <img src="screenshots/2.png" width="48%" alt="生成结果" />
   <br/>
-  <img src="screenshots/7.png" width="48%" alt="知识图谱" />&nbsp;
+  <img src="screenshots/3.png" width="48%" alt="仪表盘全景" />&nbsp;
+  <img src="screenshots/4.png" width="48%" alt="思维导图" />
+  <br/>
+  <img src="screenshots/5.png" width="48%" alt="研究项目" />&nbsp;
   <img src="screenshots/6.png" width="48%" alt="对话历史" />
   <br/>
-  <img src="screenshots/4.png" width="48%" alt="思维导图" />&nbsp;
-  <img src="screenshots/5.png" width="48%" alt="研究项目" />
-  <br/>
-  <img src="screenshots/2.png" width="48%" alt="生成结果" />
+  <img src="screenshots/7.png" width="48%" alt="知识图谱" />
 </div>
 
 ## 快速开始
@@ -144,3 +146,7 @@ ai-philosophy/
 ## 版本
 
 v1.0 ~ v11.0，详见 [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+© 2026 nywang2019. All rights reserved.
