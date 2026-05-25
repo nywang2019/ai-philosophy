@@ -440,7 +440,7 @@ const App: React.FC = () => {
       <SearchPanel
         visible={searchVisible}
         onClose={() => setSearchVisible(false)}
-        onSelect={(entry) => { handleHistorySelect(entry); }}
+        onSelect={(entry) => { handleHistorySelect(entry); setDashboardVisible(false); }}
       />
       <KnowledgeGraphPanel
         visible={graphVisible}
