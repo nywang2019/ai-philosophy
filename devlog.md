@@ -1,5 +1,50 @@
 # 开发日志
 
+## 2026-05-25 - v12.0 全文搜索高亮 + 多模态视觉 + 展馆系统 + 多模型配置 + 数据全量同步
+
+### 修改文件
+- `frontend/src/services/searchHistory.ts` - 新增highlightedSnippet字段，HTML转义+<mark>标签包装匹配词
+- `frontend/src/components/SearchPanel.tsx` - 摘要改为dangerouslySetInnerHTML渲染高亮HTML
+- `frontend/src/services/imageStore.ts` - 新建，IndexedDB图片存储（保存/读取/删除/列举），Canvas压缩800px+JPEG 0.7
+- `frontend/src/services/showcaseStore.ts` - 新建，展馆CRUD（发布/列表/删除），含发布时间和历史ID
+- `frontend/src/components/ImageManager.tsx` - 新建，图片管理器（上传/预览/管理）
+- `frontend/src/components/ShowcasePanel.tsx` - 新建，展馆面板（卡片网格/结构化预览/查看详细/查看原图）
+- `frontend/src/components/InputPanel.tsx` - 新增image类型字段，ImagePreview异步加载+ImagePicker缩略图复用
+- `frontend/src/components/SettingsModal.tsx` - 完全重写，多文本模型+多视觉模型独立配置，radio单选激活
+- `frontend/src/App.tsx` - loadConfig适配多模型存储，doGenerate集成IndexedDB图片解析+多模态配置检测
+- `frontend/src/App.css` - 新增search-result-snippet mark高亮样式，展馆/图片管理/多模型配置样式
+- `frontend/src/components/Dashboard.tsx` - 默认7天，新增展馆/知识图谱/自定义模块/多模态/图片统计卡片
+- `frontend/src/components/OutputPanel.tsx` - Token消耗显示，展馆发布按钮+已发布标记
+- `frontend/src/components/HistoryPanel.tsx` - 面板打开时清空搜索和模块筛选
+- `frontend/src/components/PromptEditor.tsx` - 侧栏直接读取getAllCustomModules，handleSelect降级查找
+- `frontend/src/components/KnowledgeGraph.tsx` - 实体排行榜，useMemo排序修复
+- `frontend/src/components/ModuleList.tsx` - 移除useMemo缓存，直接读取自定义模块保证实时更新
+- `frontend/src/services/customModuleStore.ts` - syncModuleNames()全量同步，updateCustomModule即时联动历史+展馆
+- `frontend/src/services/historyStore.ts` - deleteHistory/deleteHistories/deleteAllHistory联动清理展馆
+- `frontend/src/services/analytics.ts` - 新增展馆/知识图谱/自定义模块/多模态/提示词版本统计字段
+- `backend/src/services/llmService.ts` - callMultimodalLLM(OpenAI Vision)+callDashScopeMultimodal(通义千问原生API)
+- `backend/src/index.ts` - express.json limit 50mb，多模态路由检测，usage返回
+- `CHANGELOG.md` - v12.0更新日志
+- `README.md` - v12.0版本号和功能更新
+- `TEST.md` - v12.0测试清单和验证结果
+- `devlog.md` - 本文件
+
+### 修改内容
+参见 CHANGELOG.md v12.0 条目
+
+### 风险
+- 多模态视觉模型依赖DashScope原生API，非OpenAI兼容格式，切换其他视觉模型需新增适配函数
+- IndexedDB图片存储无上限控制，大量图片可能占满浏览器配额
+- 展馆数据全量存localStorage，条目过多时同步读取可能变慢
+
+### 未完成项
+- 无
+
+### 下一步建议
+继续按用户需求迭代
+
+---
+
 ## 2026-05-24 - v11.0 全文搜索 + 知识图谱 + AI综述 + 引用导出 + 提示词版本管理
 
 ### 修改文件

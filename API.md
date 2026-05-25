@@ -46,18 +46,27 @@ POST /api/generate
     "apiKey": "sk-...",
     "model": "gpt-4o"
   },
-  "customPrompt": null
+  "customPrompt": null,
+  "multimodalConfig": {
+    "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "apiKey": "sk-...",
+    "model": "qwen-vl-max"
+  }
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | moduleId | string | 是 | 模块ID，内置模块如 `idiom_time_travel`，自定义模块如 `custom_xxx` |
-| inputs | object | 是 | 模块的输入参数，key 对应字段 key，value 为字符串或字符串数组 |
+| inputs | object | 是 | 模块的输入参数，key 对应字段 key，value 为字符串或字符串数组。含图片时 value 为 `data:image/...` Base64 |
 | llmConfig.endpoint | string | 是 | OpenAI兼容API地址 |
 | llmConfig.apiKey | string | 是 | API密钥 |
 | llmConfig.model | string | 是 | 模型名称 |
 | customPrompt | string | 否 | 自定义提示词模板（用于自定义模块），使用 `{key}` 占位符 |
+| multimodalConfig | object | 否 | 多模态视觉模型配置，检测到图片输入时必填。结构同 llmConfig |
+| multimodalConfig.endpoint | string | 否 | 视觉模型API地址，支持 OpenAI Vision 或 DashScope 原生格式 |
+| multimodalConfig.apiKey | string | 否 | 视觉模型API密钥 |
+| multimodalConfig.model | string | 否 | 视觉模型名称（如 qwen-vl-max、gpt-4o） |
 
 **成功响应 (200)**:
 ```json
@@ -154,9 +163,10 @@ POST /api/prompts/:moduleId/reset
 
 ```
 [用户输入] → [POST /api/generate]
+              ├─ 检测图片（data:image/... Base64）→ 多模态路由
               ├─ 模块识别 → 路由提示词模板
               ├─ 参数注入（{key} → 实际值）
-              ├─ 调用 LLM API（OpenAI兼容）
+              ├─ 调用 LLM API（OpenAI兼容 或 DashScope原生多模态）
               ├─ 提取结构化 JSON
               └─ 返回 { result, duration, usage }
 ```
