@@ -4,6 +4,8 @@ import { moduleConfigs } from "../modules/moduleConfig";
 import type { ModuleConfig } from "../modules/moduleConfig";
 import { getAllCustomModules } from "./customModuleStore";
 import { getAllProjects, type ResearchProject } from "./projectStore";
+import { getAllShowcase } from "./showcaseStore";
+import { buildKnowledgeGraph } from "./knowledgeGraph";
 
 export interface ModuleStats {
   moduleId: string;
@@ -59,6 +61,14 @@ export interface Analytics {
   noteSessions: number;
   noteRate: number;
   totalProjects: number;
+  showcaseCount: number;
+  knowledgeEntities: number;
+  knowledgeEdges: number;
+  customModuleCount: number;
+  imageCount: number;
+  imageStorageKB: number;
+  multimodalSessions: number;
+  promptVersionCount: number;
   topModule: ModuleStats | null;
   moduleStats: ModuleStats[];
   dailyStats: DailyStats[];
@@ -186,10 +196,11 @@ export function computeAnalytics(daysBack = 0): Analytics {
 
   const topModule = moduleStats[0]?.count > 0 ? moduleStats[0] : null;
 
-  // 每日统计（最近30天）
+  // 每日统计（跟随时间筛选范围）
   const dailyMap: Record<string, number> = {};
   const now = Date.now();
-  for (let i = 29; i >= 0; i--) {
+  const dayCount = Math.min(daysBack || 30, 90); // 默认30天，上限90
+  for (let i = dayCount - 1; i >= 0; i--) {
     const d = new Date(now - i * 86400000);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     dailyMap[key] = 0;
@@ -333,6 +344,28 @@ export function computeAnalytics(daysBack = 0): Analytics {
   // 项目统计
   const projects = getAllProjects();
   const totalProjects = projects.length;
+
+  // 展馆和知识图谱统计
+  const showcase = getAllShowcase();
+  const showcaseCount = showcase.length;
+  const kg = buildKnowledgeGraph();
+  const knowledgeEntities = kg.entities.length;
+  const knowledgeEdges = kg.edges.length;
+
+  // 新增统计
+  const customModuleCount = getAllCustomModules().length;
+  const multimodalSessions = all.filter(e => Object.values(e.inputs).some(v => typeof v === "string" && v.startsWith("img_"))).length;
+
+  // 提示词版本总数
+  let promptVersionCount = 0;
+  try {
+    const pv = JSON.parse(localStorage.getItem("ai-philosophy-prompt-versions") || "[]");
+    for (const m of pv) promptVersionCount += (m.versions || []).length;
+  } catch { /* ignore */ }
+
+  // 图片统计粗略值（IndexedDB 异步，此处用0占位，仪表盘独立异步加载）
+  const imageCount = 0;
+  const imageStorageKB = 0;
   const projectStats: ProjectStats[] = projects.map(p => ({
     project: p,
     sessionCount: all.filter(e => e.projectId === p.id).length,
@@ -361,6 +394,14 @@ export function computeAnalytics(daysBack = 0): Analytics {
     noteSessions,
     noteRate,
     totalProjects,
+    showcaseCount,
+    knowledgeEntities,
+    knowledgeEdges,
+    customModuleCount,
+    imageCount,
+    imageStorageKB,
+    multimodalSessions,
+    promptVersionCount,
     topModule,
     moduleStats,
     dailyStats,

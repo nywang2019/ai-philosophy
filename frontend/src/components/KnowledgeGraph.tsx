@@ -66,27 +66,51 @@ const KnowledgeGraphView: React.FC<Props> = ({ onSelectEntry }) => {
         })}
       </svg>
 
-      {/* 关联会话列表 */}
-      {selectedEntity && (
-        <div style={{ flex: 1, minWidth: 200, maxHeight: 500, overflow: "auto" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-            {selectedEntity.name} <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>({relatedSessions.length} 条会话)</span>
-          </div>
-          {relatedSessions.length === 0 ? (
-            <div className="dash-empty">无关联会话</div>
-          ) : (
-            relatedSessions.map(s => (
-              <div key={s.id} className="search-result-item"
-                onClick={() => onSelectEntry?.(s)}>
-                <div className="search-result-title">
-                  {s.pinned && "📌 "}{s.favorite && "⭐ "}{s.title}
-                </div>
-                <div className="search-result-meta">{s.moduleName}</div>
+      {/* 右侧面板 */}
+      <div style={{ flex: 1, minWidth: 200, maxHeight: 500, overflow: "auto" }}>
+        {selectedEntity ? (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>
+                {selectedEntity.name} <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>({relatedSessions.length} 条会话)</span>
               </div>
-            ))
-          )}
-        </div>
-      )}
+              <button className="btn-reset" style={{ fontSize: 10, padding: "2px 8px" }} onClick={() => { setSelectedEntity(null); setRelatedSessions([]); }}>返回图谱</button>
+            </div>
+            {relatedSessions.length === 0 ? (
+              <div className="dash-empty">无关联会话</div>
+            ) : (
+              relatedSessions.map(s => (
+                <div key={s.id} className="search-result-item" onClick={() => onSelectEntry?.(s)}>
+                  <div className="search-result-title">{s.pinned && "📌 "}{s.favorite && "⭐ "}{s.title}</div>
+                  <div className="search-result-meta">{s.moduleName}</div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "var(--text-secondary)" }}>
+              📊 实体排行
+              <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400, marginLeft: 6 }}>
+                {graph.entities.length} 个实体 · {graph.edges.length} 条关系
+              </span>
+            </div>
+            {[...graph.entities].sort((a, b) => b.count - a.count).slice(0, 10).map((e, i) => (
+              <div key={e.id} className="search-result-item" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
+                onClick={() => handleNodeClick(e)}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: CAT_COLORS[e.category], minWidth: 20 }}>
+                  {i + 1}.
+                </span>
+                <span style={{ flex: 1, fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {e.name}
+                </span>
+                <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>{e.count}次</span>
+              </div>
+            ))}
+            <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4, textAlign: "center" }}>点击条目在图谱中定位</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

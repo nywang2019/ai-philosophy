@@ -12,6 +12,10 @@ const SearchPanel: React.FC<Props> = ({ visible, onClose, onSelect }) => {
   const [results, setResults] = useState<SearchResult[]>([]);
 
   useEffect(() => {
+    if (visible) setQuery("");
+  }, [visible]);
+
+  useEffect(() => {
     if (!visible) return;
     if (query.trim().length < 2) { setResults([]); return; }
     const timer = setTimeout(() => setResults(searchAll(query)), 200);
@@ -59,7 +63,7 @@ const SearchPanel: React.FC<Props> = ({ visible, onClose, onSelect }) => {
                   {r.entry.moduleName} · {fieldLabel[r.matchField]}
                 </span>
               </div>
-              <div className="search-result-snippet">{r.snippet}</div>
+              <div className="search-result-snippet" dangerouslySetInnerHTML={{ __html: r.highlightedSnippet }} />
             </div>
           ))}
         </div>

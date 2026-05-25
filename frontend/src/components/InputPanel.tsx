@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { ModuleConfig, ModuleField } from "../modules/moduleConfig";
 import WelcomeAnimation from "./WelcomeAnimation";
 import VoiceInput from "./VoiceInput";
+import { saveImage, getImage, getAllImageIds } from "../services/imageStore";
 import { getActiveProject } from "../services/projectStore";
 
 interface Props {
@@ -15,6 +16,77 @@ interface Props {
   batchMode: boolean;
   onToggleBatch: () => void;
 }
+
+// 图片预览（从IndexedDB加载）
+// 图库选择器
+const ImagePicker: React.FC<{ onSelect: (imageId: string) => void }> = ({ onSelect }) => {
+  const [images, setImages] = useState<Array<{ id: string; data: string; size: number }>>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    getAllImageIds().then(async ids => {
+      const items: typeof images = [];
+      for (const id of ids) {
+        const img = await getImage(id);
+        if (img) items.push({ id, data: img.data, size: img.size });
+      }
+      items.sort((a, b) => b.id.localeCompare(a.id));
+      setImages(items);
+      setLoading(false);
+    });
+  }, []);
+  return (
+    <div style={{ marginTop: 8, border: "1px solid var(--border)", borderRadius: 8, padding: 10, maxHeight: 200, overflowY: "auto", background: "var(--surface)" }}>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: "var(--text-secondary)" }}>从图库选择</div>
+      {loading ? <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "center" }}>加载中...</div>
+        : images.length === 0 ? <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "center" }}>暂无图片</div>
+        : <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {images.slice(0, 12).map(img => (
+            <img key={img.id} src={img.data} style={{ width: 60, height: 45, objectFit: "cover", borderRadius: 4, cursor: "pointer", border: "1px solid var(--border)" }}
+              onClick={() => onSelect(img.id)} title="选择此图" />
+          ))}
+        </div>}
+    </div>
+  );
+};
+
+const ImagePreview: React.FC<{ imageId: string }> = ({ imageId }) => {
+  const [src, setSrc] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    // 旧格式：直接Base64数据
+    if (imageId.startsWith("data:image/")) {
+      setSrc(imageId);
+      return () => { cancelled = true; };
+    }
+    // 新格式：IndexedDB引用
+    setError(false); setSrc(null);
+    getImage(imageId).then(img => {
+      if (cancelled) return;
+      if (img) setSrc(img.data); else { console.warn("[ImagePreview] image not found in IndexedDB:", imageId); setError(true); }
+    }).catch(e => {
+      if (cancelled) return;
+      console.error("[ImagePreview] IndexedDB error:", e);
+      setError(true);
+    });
+    return () => { cancelled = true; };
+  }, [imageId]);
+
+  const viewFull = () => {
+    if (!src) return;
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (w) { w.document.write(`<img src="${src}" style="max-width:100%;height:auto" />`); w.document.title = "图片预览"; }
+  };
+
+  if (error) return <div style={{ width: 200, height: 60, background: "var(--error-bg)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--error-text)", fontSize: 12 }}>图片加载失败</div>;
+  if (!src) return <div style={{ width: 200, height: 100, background: "var(--code-bg)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 12 }}>加载中...</div>;
+  return (
+    <div style={{ marginTop: 8 }}>
+      <img src={src} alt="preview" style={{ maxWidth: 200, maxHeight: 150, borderRadius: 8, cursor: "pointer" }} onClick={viewFull} title="点击查看原图" />
+      <div style={{ fontSize: 10, color: "var(--primary)", cursor: "pointer", marginTop: 4 }} onClick={viewFull}>查看原图</div>
+    </div>
+  );
+};
 
 const TagInput: React.FC<{
   field: ModuleField;
@@ -57,7 +129,15 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [tagValues, setTagValues] = useState<Record<string, string[]>>({});
 
-  // 接收初始示例值
+  // 模块切换时清空输入
+  useEffect(() => {
+    if (!initialValues) {
+      setValues({});
+      setTagValues({});
+    }
+  }, [config?.moduleId]);
+
+  // 接收初始值（示例或历史回看）
   useEffect(() => {
     if (initialValues && config) {
       const v: Record<string, unknown> = {};
@@ -74,7 +154,7 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
       setValues(v);
       setTagValues(tv);
     }
-  }, [initialValues, config]);
+  }, [initialValues]);
 
   if (!config) {
     return (
@@ -121,6 +201,36 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
     switch (field.type) {
       case "tag-input":
         return <TagInput key={field.key} field={field} tags={tagValues[field.key] || []} onChange={(tags) => handleTagChange(field.key, tags)} />;
+      case "image":
+        return (
+          <div className="input-field" key={field.key}>
+            <label>{field.label}</label>
+            <input type="file" accept="image/*" onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = async () => {
+                const img = new Image();
+                img.onload = async () => {
+                  const maxW = 800;
+                  let w = img.width, h = img.height;
+                  if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+                  const canvas = document.createElement("canvas");
+                  canvas.width = w; canvas.height = h;
+                  const ctx = canvas.getContext("2d")!;
+                  ctx.drawImage(img, 0, 0, w, h);
+                  const compressed = canvas.toDataURL("image/jpeg", 0.7);
+                  const imageId = await saveImage(compressed, file.size);
+                  handleChange(field.key, imageId);
+                };
+                img.src = reader.result as string;
+              };
+              reader.readAsDataURL(file);
+            }} />
+            {(values[field.key] as string) && <ImagePreview imageId={values[field.key] as string} />}
+            {!values[field.key] && <ImagePicker onSelect={(id) => handleChange(field.key, id)} />}
+          </div>
+        );
       case "textarea":
         return (
           <div className="input-field" key={field.key}>

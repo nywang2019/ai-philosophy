@@ -5,6 +5,7 @@ export interface SearchResult {
   entry: HistoryEntry;
   matchField: "title" | "input" | "result" | "note";
   snippet: string;
+  highlightedSnippet: string;
   score: number;
 }
 
@@ -38,12 +39,19 @@ export function searchAll(query: string): SearchResult[] {
         const firstMatch = lower.indexOf(terms[0]);
         const start = Math.max(0, firstMatch - 30);
         const end = Math.min(lower.length, firstMatch + terms[0].length + 40);
-        const snippet = (start > 0 ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
+        const rawSnippet = (start > 0 ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
+        // 生成高亮版摘要
+        let highlighted = rawSnippet.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        for (const term of terms) {
+          const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          highlighted = highlighted.replace(new RegExp(`(${escaped})`, "gi"), "<mark>$1</mark>");
+        }
 
         results.push({
           entry,
           matchField: field,
-          snippet,
+          snippet: rawSnippet,
+          highlightedSnippet: highlighted,
           score: score * weight,
         });
       }

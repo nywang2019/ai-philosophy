@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import type { GenerateResult } from "../api/client";
 import { getAllHistory, updateNote, type HistoryEntry } from "../services/historyStore";
+import { publish, getAllShowcase } from "../services/showcaseStore";
 import ResultRenderer from "./ResultRenderer";
 
 // ===== SVG 思维导图 =====
@@ -188,6 +189,7 @@ interface Props {
   batchResults?: { item: string; res: GenerateResult | null; err: string | null }[] | null;
   batchProgress?: number;
   lastHistoryId?: string | null;
+  showcaseRefreshKey?: number;
   onNoteChange?: () => void;
 }
 
@@ -228,10 +230,16 @@ const WelcomeSidebar: React.FC<{ onSelect?: (entry: HistoryEntry) => void }> = (
   );
 };
 
-const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome, onOpenHistory, batchResults, batchProgress, lastHistoryId, onNoteChange }) => {
+const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome, onOpenHistory, batchResults, batchProgress, lastHistoryId, onNoteChange, showcaseRefreshKey }) => {
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
+
+  // 每次渲染时从 localStorage 实时检查发布状态
+  void showcaseRefreshKey;
+  const isPublished = lastHistoryId
+    ? getAllShowcase().some(s => s.historyId === lastHistoryId)
+    : false;
 
   const jsonToMarkdown = (obj: Record<string, unknown>, depth = 0): string => {
     const lines: string[] = [];
@@ -270,6 +278,24 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
     const md = `# ${result.moduleName}\n\n${jsonToMarkdown(result.result)}`;
     downloadFile(md, `${result.moduleName}.md`, "text/markdown");
     setShowExport(false);
+  };
+
+  const handlePublish = () => {
+    if (!result) return;
+    if (lastHistoryId && getAllShowcase().some(s => s.historyId === lastHistoryId)) return;
+    const entry = lastHistoryId ? getAllHistory().find(e => e.id === lastHistoryId) : null;
+    const title = entry?.title || result.moduleName;
+    publish({
+      title,
+      moduleId: result.moduleId,
+      moduleName: result.moduleName,
+      inputs: {},
+      result: result.result,
+      tags: [],
+      historyId: lastHistoryId || "",
+    });
+    setShareMsg("已发布到展示馆 🎉");
+    setTimeout(() => setShareMsg(null), 2000);
   };
 
   const handleCopyCitation = () => {
@@ -551,6 +577,13 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
             </div>
           )}
         </div>
+        {isPublished ? (
+          <span className="published-badge">已发布</span>
+        ) : (
+          <button className="btn-share" onClick={handlePublish} title="发布到展示馆">
+            发布
+          </button>
+        )}
         <button className="btn-share" onClick={handleShare}>
           分享
         </button>

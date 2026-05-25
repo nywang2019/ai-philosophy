@@ -8,6 +8,7 @@ import Dashboard from "./components/Dashboard";
 import ProjectPanel from "./components/ProjectPanel";
 import SearchPanel from "./components/SearchPanel";
 import KnowledgeGraphPanel from "./components/KnowledgeGraphPanel";
+import ShowcasePanel from "./components/ShowcasePanel";
 import type { ModuleConfig } from "./modules/moduleConfig";
 import { moduleConfigs } from "./modules/moduleConfig";
 import { generate } from "./api/client";
@@ -16,17 +17,23 @@ import { addHistory, getAllHistory, setTokens } from "./services/historyStore";
 import type { HistoryEntry } from "./services/historyStore";
 import { getStoredTheme, applyTheme } from "./themes/themes";
 import { getCustomModule, getAllCustomModules } from "./services/customModuleStore";
+import { getImage } from "./services/imageStore";
 import "./App.css";
 
-const STORAGE_KEY = "ai-philosophy-llm-config";
+const STORAGE_KEY = "ai-philosophy-llm-config"; void STORAGE_KEY;
 
 function loadConfig(): LLMConfig | null {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const activeId = localStorage.getItem("ai-philosophy-active-llm-id");
+    const configs = JSON.parse(localStorage.getItem("ai-philosophy-llm-configs") || "[]");
+    const active = activeId ? configs.find((c: { id: string }) => c.id === activeId) : configs[0];
+    if (active) return { endpoint: active.endpoint, apiKey: active.apiKey, model: active.model };
+  } catch { /* ignore */ }
+  // 降级：旧格式
+  try {
+    const saved = localStorage.getItem("ai-philosophy-llm-config");
     if (saved) return JSON.parse(saved) as LLMConfig;
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
   return null;
 }
 
@@ -41,6 +48,8 @@ const App: React.FC = () => {
   const [projectVisible, setProjectVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [graphVisible, setGraphVisible] = useState(false);
+  const [showcaseVisible, setShowcaseVisible] = useState(false);
+  const [showcaseRefreshKey, setShowcaseRefreshKey] = useState(0);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [secondResult, setSecondResult] = useState<GenerateResult | null>(null);
@@ -133,11 +142,32 @@ const App: React.FC = () => {
   const doGenerate = async (mod: ModuleConfig, inputs: Record<string, unknown>) => {
     const isCustom = !!mod._isCustom;
     const customMod = isCustom ? getCustomModule(mod.moduleId) : null;
+    // 解析 IndexedDB 图片引用为 Base64
+    const resolvedInputs = { ...inputs };
+    for (const [k, v] of Object.entries(resolvedInputs)) {
+      if (typeof v === "string" && v.startsWith("img_")) {
+        const img = await getImage(v);
+        if (img) resolvedInputs[k] = img.data;
+      }
+    }
+    const hasImage = Object.values(resolvedInputs).some(v => typeof v === "string" && v.startsWith("data:image/"));
+    let mmConfig = undefined;
+    if (hasImage) {
+      try {
+        const activeId = localStorage.getItem("ai-philosophy-active-mm-id");
+        const configs = JSON.parse(localStorage.getItem("ai-philosophy-mm-configs") || "[]");
+        const active = activeId ? configs.find((c: { id: string }) => c.id === activeId) : configs[0];
+        if (active) {
+          mmConfig = { endpoint: active.endpoint, apiKey: active.apiKey, model: active.model };
+        }
+      } catch { /* ignore */ }
+    }
     return generate({
       moduleId: mod.moduleId,
-      inputs: isCustom ? { ...inputs, _customModuleName: mod.moduleName } : inputs,
+      inputs: isCustom ? { ...resolvedInputs, _customModuleName: mod.moduleName } : resolvedInputs,
       llmConfig: llmConfig!,
       customPrompt: customMod?.templateText,
+      multimodalConfig: mmConfig,
     });
   };
 
@@ -273,6 +303,7 @@ const App: React.FC = () => {
       const mod = findModule(entry.moduleId);
       if (mod) setSelectedModule(mod);
       setLastHistoryId(entry.id);
+      setExampleValues(entry.inputs || null);
       setResult({
         moduleId: entry.moduleId,
         moduleName: entry.moduleName,
@@ -292,6 +323,7 @@ const App: React.FC = () => {
       if (!mod || !entry.llmConfig) return;
 
       setSelectedModule(mod);
+      setExampleValues(entry.inputs || null);
       setCompareMode(false);
       setSecondModule(null);
       setSecondResult(null);
@@ -300,14 +332,7 @@ const App: React.FC = () => {
       setResult(null);
 
       try {
-        const isCustom = !!mod._isCustom;
-        const customMod = isCustom ? getCustomModule(mod.moduleId) : null;
-        const res = await generate({
-          moduleId: mod.moduleId,
-          inputs: isCustom ? { ...entry.inputs, _customModuleName: mod.moduleName } : entry.inputs,
-          llmConfig: entry.llmConfig,
-          customPrompt: customMod?.templateText,
-        });
+        const res = await doGenerate(mod, entry.inputs);
         setResult(res);
         const h = addHistory(mod.moduleId, mod.moduleName, entry.inputs, res.result, entry.llmConfig);
         setLastHistoryId(h.id);
@@ -319,7 +344,7 @@ const App: React.FC = () => {
         setLoading(false);
       }
     },
-    []
+    [llmConfig]
   );
 
   return (
@@ -333,6 +358,7 @@ const App: React.FC = () => {
           <span className="config-status">Token总消耗量：{(headerStats.tokens / 1000).toFixed(0)}k</span>
           <button className="btn-settings" onClick={handleBackToHome}>🏠</button>
           <button className="btn-settings" onClick={() => setSearchVisible(true)}>🔍</button>
+          <button className="btn-settings" onClick={() => setShowcaseVisible(true)}>🎨 展馆</button>
           <button className="btn-settings" onClick={() => setGraphVisible(true)}>🕸️ 知识图谱</button>
           <button className="btn-settings" onClick={() => setDashboardVisible(true)}>仪表盘</button>
           <button className="btn-settings" onClick={() => setProjectVisible(true)}>研究项目</button>
@@ -386,7 +412,7 @@ const App: React.FC = () => {
             </aside>
           ) : (
             <aside className="output-sidebar">
-              <OutputPanel result={result} error={error} loading={loading} onHistorySelect={handleHistorySelect} onBackToHome={handleBackToHome} onOpenHistory={() => setHistoryVisible(true)} batchResults={batchResults} batchProgress={batchProgress} lastHistoryId={lastHistoryId} />
+              <OutputPanel result={result} error={error} loading={loading} onHistorySelect={handleHistorySelect} onBackToHome={handleBackToHome} onOpenHistory={() => setHistoryVisible(true)} batchResults={batchResults} batchProgress={batchProgress} lastHistoryId={lastHistoryId} showcaseRefreshKey={showcaseRefreshKey} />
             </aside>
           )}
         </div>
@@ -419,7 +445,20 @@ const App: React.FC = () => {
       <KnowledgeGraphPanel
         visible={graphVisible}
         onClose={() => setGraphVisible(false)}
-        onSelectEntry={(entry) => { handleHistorySelect(entry); setGraphVisible(false); }}
+        onSelectEntry={(entry) => { handleHistorySelect(entry); setGraphVisible(false); setDashboardVisible(false); }}
+      />
+      <ShowcasePanel
+        visible={showcaseVisible}
+        onClose={() => { setShowcaseVisible(false); setShowcaseRefreshKey(k => k + 1); }}
+        onView={(item) => {
+          const mod = findModule(item.moduleId);
+          if (mod) setSelectedModule(mod);
+          setExampleValues(item.inputs || null);
+          setResult({ moduleId: item.moduleId, moduleName: item.moduleName, result: item.result, duration: 0 });
+          setLastHistoryId(item.historyId || null);
+          setShowcaseVisible(false);
+          setDashboardVisible(false);
+        }}
       />
     </div>
   );

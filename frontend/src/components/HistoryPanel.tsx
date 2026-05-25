@@ -45,7 +45,7 @@ const HistoryPanel: React.FC<Props> = ({ visible, onClose, onSelect, onRegenerat
   }, []);
 
   useEffect(() => {
-    if (visible) load();
+    if (visible) { load(); setSearch(""); setFilterModule(null); }
   }, [visible, load, refreshKey]);
 
   // 点击空白区域关闭标签菜单

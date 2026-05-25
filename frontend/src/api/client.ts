@@ -11,6 +11,7 @@ export interface GenerateParams {
   inputs: Record<string, unknown>;
   llmConfig: LLMConfig;
   customPrompt?: string;
+  multimodalConfig?: LLMConfig;
 }
 
 export interface GenerateResult {

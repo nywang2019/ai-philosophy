@@ -8,13 +8,13 @@ import {
   resetPromptTemplate,
   injectParams,
 } from "./prompts/templates";
-import { callLLM, extractJSON, GenerateRequest } from "./services/llmService";
+import { callLLM, callMultimodalLLM, extractJSON, hasImages, GenerateRequest } from "./services/llmService";
 
 const app = express();
 const PORT = 3001;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 
 // 获取所有模块列表
 app.get("/api/modules", (_req, res) => {
@@ -61,11 +61,26 @@ app.post("/api/generate", async (req, res) => {
       resolvedModuleName = template.moduleName;
     }
 
+    const isMultimodal = hasImages(inputs);
+    let mmConfig = (req.body as GenerateRequest).multimodalConfig;
+    // 多模态回退：如果没有单独配置，尝试用文本模型的Key
+    if (isMultimodal && mmConfig) {
+      if (!mmConfig.apiKey) mmConfig = { ...mmConfig, apiKey: llmConfig.apiKey };
+    }
+
     console.log(
-      `[${new Date().toISOString()}] 模块: ${moduleId}, model: ${llmConfig.model}`
+      `[${new Date().toISOString()}] 模块: ${moduleId}, model: ${isMultimodal && mmConfig ? mmConfig.model : llmConfig.model}${isMultimodal ? " (多模态)" : ""}`
     );
 
-    const rawResult = await callLLM(prompt, llmConfig);
+    let rawResult;
+    if (isMultimodal && mmConfig) {
+      const images = Object.values(inputs).filter(v => typeof v === "string" && (v as string).startsWith("data:image/")) as string[];
+      rawResult = await callMultimodalLLM(prompt, images, mmConfig);
+    } else if (isMultimodal && !mmConfig) {
+      throw new Error("检测到图片输入，但未配置多模态视觉模型。请在设置中配置视觉API。");
+    } else {
+      rawResult = await callLLM(prompt, llmConfig);
+    }
     const jsonResult = extractJSON(rawResult.content);
 
     let parsed;

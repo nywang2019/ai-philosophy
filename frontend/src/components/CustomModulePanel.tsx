@@ -12,6 +12,7 @@ const FIELD_TYPES: { value: ModuleField["type"]; label: string }[] = [
   { value: "text", label: "文本" },
   { value: "textarea", label: "多行文本" },
   { value: "tag-input", label: "标签输入" },
+  { value: "image", label: "图片上传" },
 ];
 
 const emptyField: ModuleField = { key: "", label: "", type: "text", placeholder: "" };

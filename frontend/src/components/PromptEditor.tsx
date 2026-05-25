@@ -23,6 +23,8 @@ const PromptEditor: React.FC = () => {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showVersions, setShowVersions] = useState(false);
   const [versions, setVersions] = useState<PromptVersion[]>([]);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
   const initializedRef = useRef(false);
 
   const loadAll = useCallback(async () => {
@@ -55,7 +57,10 @@ const PromptEditor: React.FC = () => {
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
-    const p = allPrompts.find((p) => p.moduleId === id);
+    // 先从缓存找，再实时读自定义模块（确保新增后立即可用）
+    const p = allPrompts.find((p) => p.moduleId === id)
+      || (() => { const cm = getAllCustomModules().find(m => m.moduleId === id); return cm ? { moduleId: cm.moduleId, moduleName: cm.moduleName, templateText: cm.templateText, _isCustom: true as const } : undefined; })();
+    void (p as { _isCustom?: boolean });
     if (p) {
       setEditText(p.templateText);
       setIsCustom(!!(p as { _isCustom?: boolean })._isCustom);
@@ -139,18 +144,18 @@ const PromptEditor: React.FC = () => {
             {p.moduleName}
           </div>
         ))}
-        {allPrompts.filter((p) => (p as { _isCustom?: boolean })._isCustom).length > 0 && (
+        {(() => { const cm = getAllCustomModules(); return cm.length > 0; })() && (
           <>
             <div className="prompt-editor-sidebar-header" style={{ marginTop: 12 }}>
               自定义模块
             </div>
-            {allPrompts.filter((p) => (p as { _isCustom?: boolean })._isCustom).map((p) => (
+            {getAllCustomModules().map((m) => (
               <div
-                key={p.moduleId}
-                className={`prompt-editor-item ${selectedId === p.moduleId ? "active" : ""}`}
-                onClick={() => handleSelect(p.moduleId)}
+                key={m.moduleId}
+                className={`prompt-editor-item ${selectedId === m.moduleId ? "active" : ""}`}
+                onClick={() => handleSelect(m.moduleId)}
               >
-                ✦ {p.moduleName}
+                ✦ {m.moduleName}
               </div>
             ))}
           </>
@@ -215,7 +220,7 @@ const PromptEditor: React.FC = () => {
                 ) : (
                   versions.map((v, i) => (
                     <div key={v.versionId} className="prompt-version-item">
-                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }} onClick={async () => {
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }} title="点击恢复此版本" onClick={async () => {
                           if (!selectedId) return;
                           setEditText(v.templateText);
                           setShowVersions(false);
@@ -238,19 +243,38 @@ const PromptEditor: React.FC = () => {
                         }}>
                         <span className="prompt-version-num">#{i + 1}</span>
                         <span className="prompt-version-time">{new Date(v.timestamp).toLocaleString("zh-CN")}</span>
-                        {v.note ? (
-                          <span className="prompt-version-note" title={v.note}>📝</span>
+                        {editingNoteId === v.versionId ? (
+                          <input
+                            className="prompt-version-note-input"
+                            value={editingNoteText}
+                            onChange={e => setEditingNoteText(e.target.value)}
+                            onBlur={() => {
+                              if (selectedId) { updateVersionNote(selectedId, v.versionId, editingNoteText); setVersions(getVersions(selectedId)); }
+                              setEditingNoteId(null);
+                            }}
+                            onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                            autoFocus
+                            onClick={e => e.stopPropagation()}
+                            placeholder="备注..."
+                          />
                         ) : (
-                          <span className="prompt-version-note" title="添加备注" onClick={(e) => {
-                            e.stopPropagation();
-                            const note = prompt("添加备注：", v.note);
-                            if (note !== null && selectedId) { updateVersionNote(selectedId, v.versionId, note); setVersions(getVersions(selectedId)); }
-                          }} style={{ opacity: 0.3 }}>✏️</span>
+                          <span
+                            className="prompt-version-note-text"
+                            onClick={e => {
+                              e.stopPropagation();
+                              setEditingNoteId(v.versionId);
+                              setEditingNoteText(v.note || "");
+                            }}
+                            title="点击编辑备注"
+                          >
+                            版本备注：{v.note || "无"}
+                          </span>
                         )}
                       </div>
                       <button
                         className="btn-reset"
                         style={{ fontSize: 10, padding: "1px 4px" }}
+                        title="删除此版本"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!selectedId) return;

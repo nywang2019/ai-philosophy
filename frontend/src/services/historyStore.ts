@@ -166,6 +166,15 @@ export function updateTitle(id: string, title: string): void {
   if (found) {
     found.title = title;
     saveAll(entries);
+    // 同步展馆中该对话的标题
+    try {
+      const sc = JSON.parse(localStorage.getItem("ai-philosophy-showcase") || "[]");
+      let changed = false;
+      for (const item of sc) {
+        if (item.historyId === id) { item.title = title; changed = true; }
+      }
+      if (changed) localStorage.setItem("ai-philosophy-showcase", JSON.stringify(sc));
+    } catch { /* ignore */ }
   }
 }
 
@@ -181,16 +190,30 @@ export function togglePin(id: string): void {
 export function deleteHistory(id: string): void {
   const entries = loadAll().filter((e) => e.id !== id);
   saveAll(entries);
+  // 同步展馆：移除已删除对话的展品
+  try {
+    const sc = JSON.parse(localStorage.getItem("ai-philosophy-showcase") || "[]");
+    const filtered = sc.filter((item: { historyId?: string }) => item.historyId !== id);
+    localStorage.setItem("ai-philosophy-showcase", JSON.stringify(filtered));
+  } catch { /* ignore */ }
 }
 
 export function deleteHistories(ids: string[]): void {
   const idSet = new Set(ids);
   const entries = loadAll().filter((e) => !idSet.has(e.id));
   saveAll(entries);
+  // 同步展馆：移除已删除对话的展品
+  try {
+    const sc = JSON.parse(localStorage.getItem("ai-philosophy-showcase") || "[]");
+    const filtered = sc.filter((item: { historyId?: string }) => !idSet.has(item.historyId || ""));
+    localStorage.setItem("ai-philosophy-showcase", JSON.stringify(filtered));
+  } catch { /* ignore */ }
 }
 
 export function deleteAllHistory(): void {
   saveAll([]);
+  // 同步展馆：清空全部
+  try { localStorage.setItem("ai-philosophy-showcase", "[]"); } catch { /* ignore */ }
 }
 
 export function getHistoryById(id: string): HistoryEntry | undefined {
@@ -203,6 +226,15 @@ export function updateTags(id: string, tags: string[]): void {
   if (found) {
     found.tags = tags;
     saveAll(entries);
+    // 同步展馆标签
+    try {
+      const sc = JSON.parse(localStorage.getItem("ai-philosophy-showcase") || "[]");
+      let changed = false;
+      for (const item of sc) {
+        if (item.historyId === id) { item.tags = tags; changed = true; }
+      }
+      if (changed) localStorage.setItem("ai-philosophy-showcase", JSON.stringify(sc));
+    } catch { /* ignore */ }
   }
 }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { moduleConfigs } from "../modules/moduleConfig";
 import type { ModuleConfig } from "../modules/moduleConfig";
 import { getAllCustomModules } from "../services/customModuleStore";
@@ -11,17 +11,16 @@ interface Props {
 }
 
 const ModuleList: React.FC<Props> = ({ selectedId, secondSelectedId, onSelect, onTryExample }) => {
-  const allModules = useMemo(() => {
-    const customs: ModuleConfig[] = getAllCustomModules().map((m) => ({
-      moduleId: m.moduleId,
-      moduleName: m.moduleName,
-      icon: m.icon || "📦",
-      description: m.description,
-      fields: m.fields,
-      _isCustom: true,
-    }));
-    return [...moduleConfigs, ...customs];
-  }, []);
+  // 每次渲染时动态获取自定义模块，确保增删改实时同步
+  const customs: ModuleConfig[] = getAllCustomModules().map((m) => ({
+    moduleId: m.moduleId,
+    moduleName: m.moduleName,
+    icon: m.icon || "📦",
+    description: m.description,
+    fields: m.fields,
+    _isCustom: true,
+  }));
+  const allModules = [...moduleConfigs, ...customs];
 
   const [tipId, setTipId] = useState<string | null>(null);
 

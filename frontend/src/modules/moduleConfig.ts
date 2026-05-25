@@ -3,7 +3,7 @@
 export interface ModuleField {
   key: string;
   label: string;
-  type: "text" | "textarea" | "tag-input";
+  type: "text" | "textarea" | "tag-input" | "image";
   placeholder?: string;
   suggestions?: string[];
 }

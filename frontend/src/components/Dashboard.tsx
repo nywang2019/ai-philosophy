@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { computeAnalytics, type ModuleStats, type DailyStats, type Analytics } from "../services/analytics";
 import type { HistoryEntry } from "../services/historyStore";
 import { generate, type LLMConfig } from "../api/client";
@@ -150,7 +150,15 @@ const LineChart: React.FC<{ data: DailyStats[]; movingAvg?: number[] }> = ({ dat
       {data.map((d, i) => {
         const x = pad.l + (i / Math.max(data.length - 1, 1)) * cw;
         if (d.count === 0) return null;
-        return <circle key={i} cx={x} cy={yFor(d.count)} r="2.5" fill={CHART_COLORS[0]} opacity="0.9" />;
+        const y = yFor(d.count);
+        return (
+          <g key={i}>
+            <circle cx={x} cy={y} r="2.5" fill={CHART_COLORS[0]} opacity="0.9" />
+            {d.count > 0 && (
+              <text x={x} y={y - 8} textAnchor="middle" fontSize="9" fontWeight="600" fill={CHART_COLORS[0]}>{d.count}</text>
+            )}
+          </g>
+        );
       })}
 
       {xLabels.map((l) => (
@@ -300,6 +308,9 @@ const HourHeatmap: React.FC<{ data: import("../services/analytics").HourStats[];
         return (
           <g key={d.hour}>
             <rect x={x} y={y} width={barW} height={Math.max(h, 1)} rx="3" fill={d.count > 0 ? CHART_COLORS[0] : "var(--code-bg)"} opacity={d.count > 0 ? 0.8 : 0.3} />
+            {d.count > 0 && (
+              <text x={x + barW / 2} y={y - 3} textAnchor="middle" fontSize="8" fontWeight="600" fill={CHART_COLORS[0]}>{d.count}</text>
+            )}
             {d.hour % 6 === 0 && (
               <text x={x + barW / 2} y={H - 4} textAnchor="middle" fontSize="10" fill="var(--muted)">
                 {String(d.hour).padStart(2, "0")}:00
@@ -412,8 +423,23 @@ const FavBars: React.FC<{ data: ModuleStats[] }> = ({ data }) => {
 
 // ===== 主仪表盘 =====
 const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void; onViewProject?: () => void }> = ({ onHistorySelect, onViewProject }) => {
-  const [range, setRange] = useState(30);
+  const [range, setRange] = useState(7);
   const stats = useMemo(() => computeAnalytics(range), [range]);
+  const [imageCount, setImageCount] = useState(0);
+  const [imageKB, setImageKB] = useState(0);
+
+  useEffect(() => {
+    import("../services/imageStore").then(async ({ getAllImageIds, getImage }) => {
+      const ids = await getAllImageIds();
+      let kb = 0;
+      for (const id of ids) {
+        const img = await getImage(id);
+        if (img) kb += Math.round(img.size / 1024);
+      }
+      setImageCount(ids.length);
+      setImageKB(kb);
+    }).catch(() => {});
+  }, [range]);
   const hourMax = Math.max(...stats.hourStats.map((h) => h.count), 1);
   const weekdayMax = Math.max(...stats.weekdayStats.map((w) => w.count), 1);
   const [insight, setInsight] = useState<string | null>(null);
@@ -544,6 +570,11 @@ const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void; onV
         <StatCard label="平均输入" value={`${stats.averageInputLen}字`} sub={`累计输入 ${(stats.totalInputChars / 1000).toFixed(1)}k 字`} />
         <StatCard label="存储占用" value={`${(stats.storageBytes / 1024).toFixed(1)}KB`} sub="本地数据量" />
         <StatCard label="研究项目" value={stats.totalProjects} sub="个项目" color="#7c3aed" />
+        <StatCard label="展馆" value={stats.showcaseCount} sub="件展品" color="#f59e0b" />
+        <StatCard label="知识图谱" value={`${stats.knowledgeEntities}/${stats.knowledgeEdges}`} sub="实体/关系" color="#0891b2" />
+        <StatCard label="自定义模块" value={stats.customModuleCount} sub="个" color="#db2777" />
+        <StatCard label="图片存储" value={`${imageCount}张/${(imageKB / 1024).toFixed(1)}MB`} sub="IndexedDB" color="#d97706" />
+        <StatCard label="多模态会话" value={stats.multimodalSessions} sub="含图片" color="#f59e0b" />
       </div>
 
       {/* 图表行 */}
