@@ -280,17 +280,14 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, onSubmit, loading, 
   return (
     <div className="input-panel">
       <div className="input-panel-header">
-        {compareMode && secondConfig
-          ? <><span className="compare-badge-a">● {config.moduleName}</span> vs <span className="compare-badge-b">▲ {secondConfig.moduleName}</span></>
-          : config.moduleName
-        }
+        {config.moduleName}
         {(() => { const ap = getActiveProject(); return ap ? <span className="active-project-badge">{ap.icon} {ap.name}</span> : null; })()}
       </div>
       {/* 对比模式和批量模式暂时隐藏，后续开放 */}
       <form onSubmit={handleSubmit}>
         {config.fields.map(renderField)}
-        <button type="submit" className="btn-generate" disabled={!isFormValid() || loading || (compareMode && !secondConfig)}>
-          {loading ? "生成中..." : compareMode && secondConfig ? "双模块生成" : "开始生成"}
+        <button type="submit" className="btn-generate" disabled={!isFormValid() || loading}>
+          {loading ? "生成中..." : "开始生成"}
         </button>
       </form>
     </div>

@@ -148,21 +148,6 @@ const App: React.FC = () => {
     // 暂时禁用自动标签
   }, [llmConfig]);
 
-  const toggleBatch = useCallback(() => {
-    setBatchMode(prev => !prev);
-    setBatchResults(null);
-  }, []);
-
-  const toggleCompare = useCallback(() => {
-    setCompareMode((prev) => {
-      if (prev) {
-        setSecondModule(null);
-        setSecondResult(null);
-      }
-      return !prev;
-    });
-  }, []);
-
   // 单个模块生成
   const doGenerate = async (mod: ModuleConfig, inputs: Record<string, unknown>) => {
     const isCustom = !!mod._isCustom;
