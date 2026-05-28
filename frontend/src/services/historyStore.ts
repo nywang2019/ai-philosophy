@@ -103,10 +103,17 @@ function autoTitle(_moduleName: string, inputs: Record<string, unknown>): string
   if (question) return snip(question);
   if (topic) return snip(topic);
 
+  // 检测是否含图片（多模态模块）
+  const hasImage = Object.values(inputs).some(v => typeof v === "string" && (v as string).startsWith("img_"));
   // 通用兜底：遍历所有输入值，找到第一个有意义的字符串
+  // 多模态模块跳过图片ID，优先取文本字段作为标题
   for (const v of Object.values(inputs)) {
-    if (typeof v === "string" && v.trim()) return snip(v.trim());
-    if (Array.isArray(v) && v.length > 0) return snip(v.join("、"));
+    if (typeof v === "string" && v.trim() && !(v as string).startsWith("img_")) {
+      return snip((hasImage ? "📷 " : "") + v.trim());
+    }
+    if (Array.isArray(v) && v.length > 0) {
+      return snip((hasImage ? "📷 " : "") + v.join("、"));
+    }
   }
   return "未命名对话";
 }
