@@ -1,4 +1,7 @@
-// API客户端 - 后端接口调用
+// API客户端 - 浏览器直接调用 LLM API
+import { callLLM, callMultimodalLLM, extractJSON, hasImages } from "../services/llmService";
+import type { LLMConfig as LLMServiceConfig } from "../services/llmService";
+import { getAllModules, getAllPromptTemplates, getTemplate, injectParams, updatePromptTemplate, resetPromptTemplate } from "../services/promptTemplates";
 
 export interface LLMConfig {
   endpoint: string;
@@ -27,65 +30,106 @@ export interface ModuleInfo {
   moduleName: string;
 }
 
-export async function fetchModules(): Promise<ModuleInfo[]> {
-  const res = await fetch("/api/modules");
-  if (!res.ok) throw new Error("获取模块列表失败");
-  const data = await res.json();
-  return data.modules;
-}
-
-export async function generate(
-  params: GenerateParams
-): Promise<GenerateResult> {
-  const res = await fetch("/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "生成失败");
-  }
-  return data;
-}
-
-// ===== 提示词模板管理 =====
-
+// 提示词模板数据
 export interface PromptTemplateData {
   moduleId: string;
   moduleName: string;
   templateText: string;
 }
 
-export async function fetchPrompts(): Promise<PromptTemplateData[]> {
-  const res = await fetch("/api/prompts");
-  if (!res.ok) throw new Error("获取提示词失败");
-  const data = await res.json();
-  return data.prompts;
+// 模块列表来自本地配置，不再需要后端 API
+export async function fetchModules(): Promise<ModuleInfo[]> {
+  return getAllModules();
 }
 
-export async function updatePrompt(
-  moduleId: string,
-  templateText: string
-): Promise<void> {
-  const res = await fetch(`/api/prompts/${moduleId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ templateText }),
-  });
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || "更新提示词失败");
+export async function generate(params: GenerateParams): Promise<GenerateResult> {
+  const { moduleId, inputs, llmConfig, customPrompt, multimodalConfig } = params;
+  const startTime = Date.now();
+
+  let prompt: string;
+  let resolvedModuleName = moduleId;
+
+  if (customPrompt) {
+    prompt = injectParams(customPrompt, inputs);
+    resolvedModuleName = (inputs._customModuleName as string) || moduleId;
+  } else {
+    const template = getTemplate(moduleId);
+    if (!template) throw new Error(`未找到模块：${moduleId}`);
+    prompt = template.buildPrompt(inputs);
+    resolvedModuleName = template.moduleName;
   }
+
+  const isMultimodal = hasImages(inputs);
+  let mmConfig: LLMServiceConfig | undefined;
+  if (isMultimodal && multimodalConfig) {
+    mmConfig = { ...multimodalConfig };
+    if (!mmConfig.apiKey) mmConfig.apiKey = llmConfig.apiKey;
+  }
+
+  let rawResult;
+  if (isMultimodal && mmConfig) {
+    const images = Object.values(inputs).filter(
+      v => typeof v === "string" && (v as string).startsWith("data:image/")
+    ) as string[];
+    rawResult = await callMultimodalLLM(prompt, images, mmConfig);
+  } else if (isMultimodal && !mmConfig) {
+    throw new Error("检测到图片输入，但未配置多模态视觉模型。请在设置中配置视觉API。");
+  } else {
+    rawResult = await callLLM(prompt, llmConfig);
+  }
+
+  const jsonResult = extractJSON(rawResult.content);
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonResult);
+  } catch {
+    parsed = { raw: rawResult.content };
+  }
+
+  return {
+    moduleId,
+    moduleName: resolvedModuleName,
+    result: parsed,
+    duration: Date.now() - startTime,
+    usage: rawResult.usage
+      ? {
+          promptTokens: rawResult.usage.promptTokens,
+          completionTokens: rawResult.usage.completionTokens,
+          totalTokens: rawResult.usage.totalTokens,
+        }
+      : null,
+  };
+}
+
+// 提示词管理改为本地 localStorage 操作
+const PROMPT_STORAGE_KEY = "ai-philosophy-prompt-overrides";
+
+function getPromptOverrides(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(PROMPT_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+export async function fetchPrompts(): Promise<PromptTemplateData[]> {
+  const overrides = getPromptOverrides();
+  return getAllPromptTemplates().map(t => ({
+    ...t,
+    templateText: overrides[t.moduleId] || t.templateText,
+  }));
+}
+
+export async function updatePrompt(moduleId: string, templateText: string): Promise<void> {
+  const overrides = getPromptOverrides();
+  overrides[moduleId] = templateText;
+  localStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(overrides));
+  updatePromptTemplate(moduleId, templateText); // 同步运行时模板
 }
 
 export async function resetPrompt(moduleId: string): Promise<void> {
-  const res = await fetch(`/api/prompts/${moduleId}/reset`, {
-    method: "POST",
-  });
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || "重置提示词失败");
-  }
+  const overrides = getPromptOverrides();
+  delete overrides[moduleId];
+  localStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(overrides));
+  resetPromptTemplate(moduleId); // 同步运行时模板
 }
