@@ -200,7 +200,7 @@ const CustomModulePanel: React.FC = () => {
                 type="button"
                 className="btn-settings"
                 style={{ fontSize: 11 }}
-                onClick={() => setEditing({ ...editing, templateText: '你是一位专业助手。\n\n任务：根据用户输入的概念生成通俗易懂的解释。\n\n用户输入的概念：{concept}\n\n请按以下JSON格式输出：\n{\n  "simple": "用大白话解释（一句话）",\n  "example": "举一个生活中的例子",\n  "insight": "你的独到见解"\n}\n\n提示：上面 {concept} 对应下方"输入字段"中 key 为 concept 的字段（type 选"文本"或"多行文本"）。' })}
+                onClick={() => setEditing({ ...editing, templateText: '你是一位专业助手。\n\n任务：根据用户输入的概念生成通俗易懂的解释。\n\n用户输入的概念：{concept}\n\n请按以下JSON格式输出：\n{\n  "simple": "用大白话解释（一句话）",\n  "example": "举一个生活中的例子",\n  "insight": "你的独到见解"\n}\n\n提示：上面 {concept} 对应上方"输入字段"中 key 设为 concept 的字段（字段标签可填"输入概念"，type 选"文本"）。key 是占位符名称，标签是用户看到的输入提示。' })}
               >
                 📝 纯文本模板
               </button>
@@ -208,7 +208,7 @@ const CustomModulePanel: React.FC = () => {
                 type="button"
                 className="btn-settings"
                 style={{ fontSize: 11 }}
-                onClick={() => setEditing({ ...editing, templateText: '你是一位多模态分析专家。\n\n任务：根据用户上传的图片和补充说明，生成综合分析。\n\n用户上传的图片：{image}\n补充说明：{description}\n\n请按以下JSON格式输出：\n{\n  "overview": "图片内容概述",\n  "details": "细节分析",\n  "conclusion": "结合补充说明的综合结论"\n}\n\n提示：{image} 对应 key 为 image、type 为"图片上传"的字段；{description} 对应 key 为 description 的文本字段。请在下方添加这两个输入字段。' })}
+                onClick={() => setEditing({ ...editing, templateText: '你是一位多模态分析专家。\n\n任务：根据用户上传的图片和补充说明，生成综合分析。\n\n用户上传的图片：{image}\n补充说明：{description}\n\n请按以下JSON格式输出：\n{\n  "overview": "图片内容概述",\n  "details": "细节分析",\n  "conclusion": "结合补充说明的综合结论"\n}\n\n提示：{image} 对应上方 key 为 image、type 为"图片上传"的字段（标签可填"上传图片"）；{description} 对应 key 为 description 的文本字段（标签可填"补充说明"）。key 是占位符名，标签是用户看到的提示文字。' })}
               >
                 🖼️ 多模态模板
               </button>
