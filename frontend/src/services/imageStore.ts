@@ -6,7 +6,8 @@ const DB_VERSION = 1;
 
 interface StoredImage {
   id: string;
-  data: string;
+  data: string;        // 压缩版，用于 API 调用
+  originalData: string; // 原图，用于查看预览
   size: number;
   createdAt: number;
 }
@@ -40,21 +41,31 @@ async function storeRequest<T>(mode: IDBTransactionMode, fn: (store: IDBObjectSt
   });
 }
 
-// 存储图片，返回 imageId
-export async function saveImage(base64Data: string, size: number): Promise<string> {
+// 存储图片，返回 imageId。compressed 用于 API 调用，original 用于预览
+export async function saveImage(compressed: string, original: string, size: number): Promise<string> {
   const id = "img_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   await storeRequest("readwrite", store => {
-    return store.add({ id, data: base64Data, size, createdAt: Date.now() });
+    return store.add({ id, data: compressed, originalData: original, size, createdAt: Date.now() });
   });
   return id;
 }
 
-// 根据 imageId 获取图片数据
+// 根据 imageId 获取图片压缩版（用于 API 调用）
 export async function getImage(id: string): Promise<StoredImage | undefined> {
   try {
     return await storeRequest("readonly", store => store.get(id));
   } catch (e) {
     console.error("[imageStore] getImage failed for", id, e);
+    return undefined;
+  }
+}
+
+// 获取图片原图（用于预览）
+export async function getImageOriginal(id: string): Promise<string | undefined> {
+  try {
+    const img = await storeRequest("readonly", store => store.get(id)) as StoredImage | undefined;
+    return img?.originalData || img?.data; // 兼容旧数据：无 originalData 时降级到压缩版
+  } catch {
     return undefined;
   }
 }

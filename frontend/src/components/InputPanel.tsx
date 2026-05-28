@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import type { ModuleConfig, ModuleField } from "../modules/moduleConfig";
 import WelcomeAnimation from "./WelcomeAnimation";
 import VoiceInput from "./VoiceInput";
-import { saveImage, getImage, getAllImageIds } from "../services/imageStore";
+import { saveImage, getImage, getImageOriginal, getAllImageIds } from "../services/imageStore";
 import { getActiveProject } from "../services/projectStore";
 
 interface Props {
@@ -72,10 +72,15 @@ const ImagePreview: React.FC<{ imageId: string }> = ({ imageId }) => {
     return () => { cancelled = true; };
   }, [imageId]);
 
-  const viewFull = () => {
-    if (!src) return;
+  const viewFull = async () => {
+    let originalSrc = src;
+    if (imageId.startsWith("img_")) {
+      const orig = await getImageOriginal(imageId);
+      if (orig) originalSrc = orig;
+    }
+    if (!originalSrc) return;
     const w = window.open("", "_blank", "width=900,height=700");
-    if (w) { w.document.write(`<img src="${src}" style="max-width:100%;height:auto" />`); w.document.title = "图片预览"; }
+    if (w) { w.document.write(`<img src="${originalSrc}" style="max-width:100%;height:auto" />`); w.document.title = "图片预览"; }
   };
 
   if (error) return <div style={{ width: 200, height: 60, background: "var(--error-bg)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--error-text)", fontSize: 12 }}>图片加载失败</div>;
@@ -226,7 +231,8 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
                     quality -= 0.1;
                     compressed = canvas.toDataURL("image/jpeg", Math.round(quality * 10) / 10);
                   }
-                  const imageId = await saveImage(compressed, file.size);
+                  const original = reader.result as string;
+                  const imageId = await saveImage(compressed, original, file.size);
                   handleChange(field.key, imageId);
                 };
                 img.src = reader.result as string;
