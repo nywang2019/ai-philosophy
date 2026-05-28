@@ -195,6 +195,24 @@ const CustomModulePanel: React.FC = () => {
 
           <div className="input-field">
             <label>提示词模板 *</label>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <button
+                type="button"
+                className="btn-settings"
+                style={{ fontSize: 11 }}
+                onClick={() => setEditing({ ...editing, templateText: '你是一位专业助手。\n\n任务：根据用户输入生成结构化内容。\n\n输入：{input}\n\n请按以下JSON格式输出：\n{\n  "title": "标题",\n  "analysis": "分析内容",\n  "summary": "一句话总结"\n}' })}
+              >
+                📝 纯文本模板
+              </button>
+              <button
+                type="button"
+                className="btn-settings"
+                style={{ fontSize: 11 }}
+                onClick={() => setEditing({ ...editing, templateText: '你是一位多模态分析专家。\n\n任务：根据用户上传的图片和文字说明，生成综合分析。\n\n图片：{image}\n说明：{desc}\n\n请按以下JSON格式输出：\n{\n  "overview": "图片内容概述",\n  "details": "细节分析",\n  "conclusion": "结合文字说明的综合结论"\n}\n\n注意：描述图片时，请关注图片中的文字、人物、场景等关键信息。' })}
+              >
+                🖼️ 多模态模板
+              </button>
+            </div>
             <textarea
               value={editing.templateText || ""}
               onChange={(e) => setEditing({ ...editing, templateText: e.target.value })}
@@ -203,7 +221,7 @@ const CustomModulePanel: React.FC = () => {
               style={{ fontFamily: "monospace", fontSize: 12 }}
             />
             <span className="input-hint">
-              使用 {"{key}"} 作为占位符，与输入字段的 key 对应
+              使用 {"{key}"} 作为占位符，与输入字段的 key 对应。可先选择模板再修改。
             </span>
           </div>
 
