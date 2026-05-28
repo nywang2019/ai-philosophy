@@ -20,6 +20,31 @@ import { getCustomModule, getAllCustomModules } from "./services/customModuleSto
 import { getImage } from "./services/imageStore";
 import "./App.css";
 
+// 即时压缩 Base64 图片，兜底保证不超 DashScope 129k 限制
+async function compressBase64Image(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 800;
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+      let quality = 0.6;
+      let result = canvas.toDataURL("image/jpeg", quality);
+      while (result.length > 100000 && quality > 0.2) {
+        quality -= 0.1;
+        result = canvas.toDataURL("image/jpeg", Math.round(quality * 10) / 10);
+      }
+      resolve(result);
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 const STORAGE_KEY = "ai-philosophy-llm-config"; void STORAGE_KEY;
 
 function loadConfig(): LLMConfig | null {
@@ -142,12 +167,18 @@ const App: React.FC = () => {
   const doGenerate = async (mod: ModuleConfig, inputs: Record<string, unknown>) => {
     const isCustom = !!mod._isCustom;
     const customMod = isCustom ? getCustomModule(mod.moduleId) : null;
-    // 解析 IndexedDB 图片引用为 Base64
+    // 解析 IndexedDB 图片引用为 Base64，超限则即时压缩
     const resolvedInputs = { ...inputs };
     for (const [k, v] of Object.entries(resolvedInputs)) {
       if (typeof v === "string" && v.startsWith("img_")) {
         const img = await getImage(v);
-        if (img) resolvedInputs[k] = img.data;
+        if (img) {
+          let data = img.data;
+          if (data.length > 100000) {
+            data = await compressBase64Image(data);
+          }
+          resolvedInputs[k] = data;
+        }
       }
     }
     const hasImage = Object.values(resolvedInputs).some(v => typeof v === "string" && v.startsWith("data:image/"));
