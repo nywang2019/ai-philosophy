@@ -208,7 +208,7 @@ const CustomModulePanel: React.FC = () => {
                 type="button"
                 className="btn-settings"
                 style={{ fontSize: 11 }}
-                onClick={() => setEditing({ ...editing, templateText: '你是一位多模态分析专家。\n\n任务：根据用户上传的图片和补充说明，生成综合分析。\n\n用户上传的图片：{image}\n补充说明：{description}\n\n请按以下JSON格式输出。注意：JSON的key必须使用中文，这样界面才能正确显示字段名。\n{\n  "图片概述": "描述图片中的主要内容",\n  "细节分析": "分析图片中的关键细节（文字、人物、场景等）",\n  "综合结论": "结合补充说明给出最终结论"\n}\n\n提示：{image} 对应上方 key 为 image、type 为"图片上传"的字段（标签可填"上传图片"）；{description} 对应 key 为 description 的文本字段（标签可填"补充说明"）。'' })}
+                onClick={() => setEditing({ ...editing, templateText: '你是一位多模态分析专家。\n\n任务：根据用户上传的图片和补充说明，生成综合分析。\n\n用户上传的图片：{image}\n补充说明：{description}\n\n请按以下JSON格式输出。注意：JSON的key必须使用中文，这样界面才能正确显示字段名。\n{\n  "图片概述": "描述图片中的主要内容",\n  "细节分析": "分析图片中的关键细节（文字、人物、场景等）",\n  "综合结论": "结合补充说明给出最终结论"\n}\n\n提示：{image} 对应上方 key 为 image、type 为"图片上传"的字段（标签可填"上传图片"）；{description} 对应 key 为 description 的文本字段（标签可填"补充说明"）。' })}
               >
                 🖼️ 多模态模板
               </button>
