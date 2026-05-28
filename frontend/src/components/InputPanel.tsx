@@ -212,17 +212,19 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
               reader.onload = async () => {
                 const img = new Image();
                 img.onload = async () => {
-                  const maxW = 512;
+                  const maxW = 800;
                   let w = img.width, h = img.height;
                   if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
                   const canvas = document.createElement("canvas");
                   canvas.width = w; canvas.height = h;
                   const ctx = canvas.getContext("2d")!;
                   ctx.drawImage(img, 0, 0, w, h);
-                  let compressed = canvas.toDataURL("image/jpeg", 0.5);
-                  // 如果仍然过大，二次压缩
-                  if (compressed.length > 100000) {
-                    compressed = canvas.toDataURL("image/jpeg", 0.3);
+                  // 逐级降质量，确保 Base64 不超过 DashScope 129k 字符限制
+                  let quality = 0.7;
+                  let compressed = canvas.toDataURL("image/jpeg", quality);
+                  while (compressed.length > 120000 && quality > 0.2) {
+                    quality -= 0.1;
+                    compressed = canvas.toDataURL("image/jpeg", Math.round(quality * 10) / 10);
                   }
                   const imageId = await saveImage(compressed, file.size);
                   handleChange(field.key, imageId);
