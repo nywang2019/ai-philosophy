@@ -3,6 +3,7 @@ import type { GenerateResult } from "../api/client";
 import { getAllHistory, updateNote, type HistoryEntry } from "../services/historyStore";
 import { publish, getAllShowcase } from "../services/showcaseStore";
 import ResultRenderer from "./ResultRenderer";
+import { getStoredPrefs } from "./OutputPrefsPanel";
 
 // ===== SVG 思维导图 =====
 const MC = ["#4a6cf7","#e82127","#389e0d","#c75a2c","#7c3aed","#0891b2","#d97706","#db2777"];
@@ -231,7 +232,7 @@ const WelcomeSidebar: React.FC<{ onSelect?: (entry: HistoryEntry) => void }> = (
 };
 
 const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome, onOpenHistory, batchResults, batchProgress, lastHistoryId, onNoteChange, showcaseRefreshKey }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  const [viewMode, setViewMode] = useState<ViewMode>(getStoredPrefs().defaultViewMode);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
 

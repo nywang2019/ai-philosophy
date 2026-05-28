@@ -3,12 +3,12 @@ import { useState, useEffect } from "react";
 const STORAGE_KEY = "ai-philosophy-output-prefs";
 
 export interface OutputPrefs {
-  defaultViewMode: "json" | "markdown";
+  defaultViewMode: "preview" | "json" | "markdown";
   verbosity: "concise" | "standard" | "detailed";
 }
 
 const defaults: OutputPrefs = {
-  defaultViewMode: "json",
+  defaultViewMode: "preview",
   verbosity: "standard",
 };
 
@@ -58,6 +58,19 @@ const OutputPrefsPanel: React.FC = () => {
           结果展示区默认以哪种格式显示
         </p>
         <div className="radio-group">
+          <label className="radio-item">
+            <input
+              type="radio"
+              name="viewMode"
+              value="preview"
+              checked={prefs.defaultViewMode === "preview"}
+              onChange={() => handleChange("defaultViewMode", "preview")}
+            />
+            <span className="radio-label">
+              <strong>预览</strong>
+              <small>根据模块类型自动选择最佳展示方式</small>
+            </span>
+          </label>
           <label className="radio-item">
             <input
               type="radio"
