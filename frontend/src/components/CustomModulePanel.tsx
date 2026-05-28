@@ -200,7 +200,7 @@ const CustomModulePanel: React.FC = () => {
                 type="button"
                 className="btn-settings"
                 style={{ fontSize: 11 }}
-                onClick={() => setEditing({ ...editing, templateText: '你是一位专业助手。\n\n任务：根据用户输入的概念生成通俗易懂的解释。\n\n用户输入的概念：{concept}\n\n请按以下JSON格式输出：\n{\n  "simple": "用大白话解释（一句话）",\n  "example": "举一个生活中的例子",\n  "insight": "你的独到见解"\n}\n\n提示：上面 {concept} 对应上方"输入字段"中 key 设为 concept 的字段（字段标签可填"输入概念"，type 选"文本"）。key 是占位符名称，标签是用户看到的输入提示。' })}
+                onClick={() => setEditing({ ...editing, templateText: '你是一位文学比较分析专家。\n\n任务：根据用户输入的两部文学作品和比较角度，生成对比分析。\n\n作品A：{workA}\n作品B：{workB}\n比较角度：{angles}\n\n请按以下JSON格式输出：\n{\n  "themeCompare": "主题对比分析",\n  "styleCompare": "风格对比分析",\n  "conclusion": "综合比较结论"\n}\n\n提示：{workA}、{workB}、{angles} 分别对应上方三个输入字段的 key。字段标签可分别填"作品A"、"作品B"、"比较角度"。key 是占位符名（英文字母），标签是用户看到的提示文字（中文）。' })}
               >
                 📝 纯文本模板
               </button>
