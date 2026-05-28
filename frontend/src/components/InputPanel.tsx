@@ -278,19 +278,7 @@ const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onTogg
         }
         {(() => { const ap = getActiveProject(); return ap ? <span className="active-project-badge">{ap.icon} {ap.name}</span> : null; })()}
       </div>
-      <div className="compare-toggle-row">
-        <label className="compare-toggle">
-          <input type="checkbox" checked={compareMode} onChange={onToggleCompare} />
-          <span>对比模式</span>
-        </label>
-        <label className="compare-toggle">
-          <input type="checkbox" checked={batchMode} onChange={onToggleBatch} />
-          <span>批量模式</span>
-        </label>
-        {compareMode && !secondConfig && (
-          <span className="compare-hint">请在左侧模块列表选择第二个模块（显示为 ▲）</span>
-        )}
-      </div>
+      {/* 对比模式和批量模式暂时隐藏，后续开放 */}
       <form onSubmit={handleSubmit}>
         {config.fields.map(renderField)}
         <button type="submit" className="btn-generate" disabled={!isFormValid() || loading || (compareMode && !secondConfig)}>
