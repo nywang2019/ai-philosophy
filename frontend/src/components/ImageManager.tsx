@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getAllImageIds, getImage, deleteImage } from "../services/imageStore";
+import { getAllImageIds, getImage, getImageOriginal, deleteImage } from "../services/imageStore";
 import { getAllHistory } from "../services/historyStore";
 
 const ImageManager: React.FC = () => {
@@ -29,6 +29,13 @@ const ImageManager: React.FC = () => {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const viewFull = async (id: string, fallbackSrc: string) => {
+    const orig = await getImageOriginal(id);
+    const src = orig || fallbackSrc;
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (w) { w.document.write(`<img src="${src}" style="max-width:100%;height:auto" />`); w.document.title = "图片预览"; }
+  };
 
   const handleDelete = async (id: string) => {
     await deleteImage(id);
@@ -67,19 +74,13 @@ const ImageManager: React.FC = () => {
               {images.map(img => (
                 <div key={img.id} style={{ width: 180, border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", background: "var(--surface)" }}>
                   <img src={img.data} alt="" style={{ width: "100%", height: 120, objectFit: "cover", cursor: "pointer" }}
-                    onClick={() => {
-                      const w = window.open("", "_blank", "width=900,height=700");
-                      if (w) { w.document.write(`<img src="${img.data}" style="max-width:100%;height:auto" />`); w.document.title = "图片预览"; }
-                    }} title="点击查看原图" />
+                    onClick={() => viewFull(img.id, img.data)} title="点击查看原图" />
                   <div style={{ padding: "8px 10px" }}>
                     <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>
                       {(img.size / 1024).toFixed(0)}KB · {new Date(img.createdAt).toLocaleString("zh-CN")}
                     </div>
                     <div style={{ fontSize: 10, color: "var(--primary)", cursor: "pointer", marginBottom: 4 }}
-                      onClick={() => {
-                        const w = window.open("", "_blank", "width=900,height=700");
-                        if (w) { w.document.write(`<img src="${img.data}" style="max-width:100%;height:auto" />`); w.document.title = "图片预览"; }
-                      }}>查看原图</div>
+                      onClick={() => viewFull(img.id, img.data)}>查看原图</div>
                     {img.refs.length > 0 ? (
                       <div style={{ fontSize: 10, color: "var(--text-secondary)", maxHeight: 40, overflow: "hidden" }}>
                         引用：{img.refs.slice(0, 2).join("、")}{img.refs.length > 2 ? ` 等${img.refs.length}条` : ""}
