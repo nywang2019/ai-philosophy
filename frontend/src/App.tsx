@@ -419,13 +419,9 @@ const App: React.FC = () => {
             <InputPanel
               config={selectedModule}
               secondConfig={secondModule}
-              compareMode={compareMode}
-              onToggleCompare={toggleCompare}
               onSubmit={handleSubmit}
               loading={loading}
               initialValues={exampleValues}
-              batchMode={batchMode}
-              onToggleBatch={toggleBatch}
             />
           </main>
           {/* 输出区：对比模式分上下，普通模式单栏 */}

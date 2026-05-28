@@ -8,13 +8,9 @@ import { getActiveProject } from "../services/projectStore";
 interface Props {
   config: ModuleConfig | null;
   secondConfig?: ModuleConfig | null;
-  compareMode: boolean;
-  onToggleCompare: () => void;
   onSubmit: (inputs: Record<string, unknown>) => void;
   loading: boolean;
   initialValues?: Record<string, unknown> | null;
-  batchMode: boolean;
-  onToggleBatch: () => void;
 }
 
 // 图片预览（从IndexedDB加载）
@@ -130,7 +126,7 @@ const TagInput: React.FC<{
   );
 };
 
-const InputPanel: React.FC<Props> = ({ config, secondConfig, compareMode, onToggleCompare, onSubmit, loading, initialValues, batchMode, onToggleBatch }) => {
+const InputPanel: React.FC<Props> = ({ config, secondConfig, onSubmit, loading, initialValues }) => {
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [tagValues, setTagValues] = useState<Record<string, string[]>>({});
 
