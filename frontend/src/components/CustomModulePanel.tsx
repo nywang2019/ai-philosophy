@@ -200,7 +200,7 @@ const CustomModulePanel: React.FC = () => {
                 type="button"
                 className="btn-settings"
                 style={{ fontSize: 11 }}
-                onClick={() => setEditing({ ...editing, templateText: '你是一位文学比较分析专家。\n\n任务：根据用户输入的两部文学作品和比较角度，生成对比分析。\n\n作品A：{workA}\n作品B：{workB}\n比较角度：{angles}\n\n请按以下JSON格式输出：\n{\n  "themeCompare": "主题对比分析",\n  "styleCompare": "风格对比分析",\n  "conclusion": "综合比较结论"\n}\n\n提示：{workA}、{workB}、{angles} 分别对应上方三个输入字段的 key。字段标签可分别填"作品A"、"作品B"、"比较角度"。key 是占位符名（英文字母），标签是用户看到的提示文字（中文）。' })}
+                onClick={() => setEditing({ ...editing, templateText: '你是一位文学比较分析专家。\n\n任务：根据用户输入的两部文学作品和比较角度，生成对比分析。\n\n作品A：{workA}\n作品B：{workB}\n比较角度：{angles}\n\n请按以下JSON格式输出。注意：JSON的key必须使用中文，这样界面才能正确显示字段名。\n{\n  "主题对比": "从主题层面比较两部作品",\n  "风格对比": "从写作风格层面比较两部作品",\n  "综合结论": "用一段话总结两部作品的异同与特色"\n}\n\n提示：{workA}、{workB}、{angles} 分别对应上方三个输入字段的 key。key 是占位符名（英文字母），标签是用户看到的提示文字（中文）。JSON输出的key用中文。' })}
               >
                 📝 纯文本模板
               </button>
@@ -208,7 +208,7 @@ const CustomModulePanel: React.FC = () => {
                 type="button"
                 className="btn-settings"
                 style={{ fontSize: 11 }}
-                onClick={() => setEditing({ ...editing, templateText: '你是一位多模态分析专家。\n\n任务：根据用户上传的图片和补充说明，生成综合分析。\n\n用户上传的图片：{image}\n补充说明：{description}\n\n请按以下JSON格式输出：\n{\n  "overview": "图片内容概述",\n  "details": "细节分析",\n  "conclusion": "结合补充说明的综合结论"\n}\n\n提示：{image} 对应上方 key 为 image、type 为"图片上传"的字段（标签可填"上传图片"）；{description} 对应 key 为 description 的文本字段（标签可填"补充说明"）。key 是占位符名，标签是用户看到的提示文字。' })}
+                onClick={() => setEditing({ ...editing, templateText: '你是一位多模态分析专家。\n\n任务：根据用户上传的图片和补充说明，生成综合分析。\n\n用户上传的图片：{image}\n补充说明：{description}\n\n请按以下JSON格式输出。注意：JSON的key必须使用中文，这样界面才能正确显示字段名。\n{\n  "图片概述": "描述图片中的主要内容",\n  "细节分析": "分析图片中的关键细节（文字、人物、场景等）",\n  "综合结论": "结合补充说明给出最终结论"\n}\n\n提示：{image} 对应上方 key 为 image、type 为"图片上传"的字段（标签可填"上传图片"）；{description} 对应 key 为 description 的文本字段（标签可填"补充说明"）。'' })}
               >
                 🖼️ 多模态模板
               </button>

@@ -537,26 +537,39 @@ const ConversionView: React.FC<{ data: Record<string, unknown> }> = ({ data }) =
 
 // ===== 通用 key→中文映射 =====
 const KEY_LABELS: Record<string, string> = {
-  keyword: "关键词",
-  religion: "宗教",
-  scripture: "经典出处",
-  interpretation: "核心阐释",
-  practice: "实践意义",
-  comparison: "对比分析",
-  summary: "总结",
-  religions: "宗教分析",
-  explicitEmotion: "显性情感",
-  implicitEmotion: "隐性情感",
-  rhetoricEmotion: "修辞情感",
-  intensityCurve: "情感强度",
-  overallAssessment: "整体评价",
-  intensity: "强度",
-  quality: "情感质地",
-  position: "节点位置",
+  // 内置模块
+  keyword: "关键词", religion: "宗教", scripture: "经典出处",
+  interpretation: "核心阐释", practice: "实践意义", comparison: "对比分析",
+  summary: "总结", religions: "宗教分析", explicitEmotion: "显性情感",
+  implicitEmotion: "隐性情感", rhetoricEmotion: "修辞情感",
+  intensityCurve: "情感强度", overallAssessment: "整体评价", intensity: "强度",
+  quality: "情感质地", position: "节点位置",
+  // 自定义模块常用 key
+  overview: "概述", details: "细节", conclusion: "结论",
+  title: "标题", analysis: "分析", description: "描述",
+  name: "名称", type: "类型", result: "结果", content: "内容",
+  themeCompare: "主题对比", styleCompare: "风格对比",
+  simple: "大白话解释", example: "示例", insight: "独到见解",
+  theme: "主题", author: "作者", era: "时代", source: "出处",
+  score: "评分", reason: "原因", suggestion: "建议",
+  background: "背景", feature: "特点", advantage: "优势",
+  disadvantage: "不足", category: "分类", level: "级别",
+  date: "日期", status: "状态", remark: "备注",
 };
 
+function camelToWords(key: string): string {
+  // 驼峰转空格：themeCompare → "theme Compare"
+  return key.replace(/([A-Z])/g, " $1").toLowerCase().trim();
+}
+
 function keyLabel(key: string): string {
-  return KEY_LABELS[key] || key;
+  if (KEY_LABELS[key]) return KEY_LABELS[key];
+  // 尝试驼峰拆分后逐词翻译
+  const words = camelToWords(key).split(/\s+/);
+  const translated = words.map(w => KEY_LABELS[w] || w).join("");
+  if (translated !== key) return translated;
+  // 最后兜底：展示驼峰拆分后的可读形式
+  return camelToWords(key);
 }
 
 // ===== 通用结构渲染（fallback） =====
