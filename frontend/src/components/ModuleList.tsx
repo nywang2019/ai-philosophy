@@ -5,12 +5,13 @@ import { getAllCustomModules } from "../services/customModuleStore";
 
 interface Props {
   selectedId: string | null;
-  secondSelectedId?: string | null;
+
+
   onSelect: (config: ModuleConfig) => void;
   onTryExample?: (config: ModuleConfig) => void;
 }
 
-const ModuleList: React.FC<Props> = ({ selectedId, secondSelectedId, onSelect, onTryExample }) => {
+const ModuleList: React.FC<Props> = ({ selectedId, onSelect, onTryExample }) => {
   // 每次渲染时动态获取自定义模块，确保增删改实时同步
   const customs: ModuleConfig[] = getAllCustomModules().map((m) => ({
     moduleId: m.moduleId,
@@ -30,16 +31,16 @@ const ModuleList: React.FC<Props> = ({ selectedId, secondSelectedId, onSelect, o
       <div className="module-list-items">
         {allModules.map((mod) => {
           const isA = selectedId === mod.moduleId;
-          const isB = secondSelectedId === mod.moduleId;
+
           return (
             <div
               key={mod.moduleId}
-              className={`module-item ${isA ? "active" : ""} ${isB ? "second-active" : ""}`}
+              className={`module-item ${isA ? "active" : ""}`}
               onClick={() => onSelect(mod)}
             >
               <div className="module-item-name">
                 <span className="module-icon">{mod.icon || "📦"}</span>
-                {isA && "● "}{isB && "▲ "}{mod._isCustom ? "✦ " : ""}{mod.moduleName}
+                {isA && "● "}{mod._isCustom ? "✦ " : ""}{mod.moduleName}
                 {mod.tips && (
                   <span
                     className="module-tips-btn"
