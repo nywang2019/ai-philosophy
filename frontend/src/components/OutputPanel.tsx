@@ -507,57 +507,33 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
           </button>
         )}
         <span className="output-title">{result.moduleName}</span>
-        <div className="output-toggle">
-          <button
-            className={viewMode === "preview" ? "active" : ""}
-            onClick={() => setViewMode("preview")}
-          >
-            预览
-          </button>
-          <button
-            className={viewMode === "json" ? "active" : ""}
-            onClick={() => setViewMode("json")}
-          >
-            JSON
-          </button>
-          <button
-            className={viewMode === "markdown" ? "active" : ""}
-            onClick={() => setViewMode("markdown")}
-          >
-            MD
-          </button>
-          <button
-            className={viewMode === "mindmap" ? "active" : ""}
-            onClick={() => setViewMode("mindmap")}
-          >
-            导图
-          </button>
-        </div>
-        <div className="export-wrap">
-          <button className="btn-share" onClick={() => setShowExport(!showExport)}>
-            导出
-          </button>
-          {showExport && (
-            <div className="export-dropdown">
-              <div className="export-option" onClick={handleCopyLink}>🔗 复制链接</div>
-              <div className="export-option" onClick={handleExportMD}>📝 Markdown</div>
-              <div className="export-option" onClick={handleExportHTML}>🌐 HTML</div>
-              <div className="export-option" onClick={handleExportPNG}>🖼️ 图片</div>
-              <div className="export-option" onClick={handleCopyCitation}>📖 引用</div>
-            </div>
+        <div className="output-actions-right">
+          <div className="output-toggle">
+            <button className={viewMode === "preview" ? "active" : ""} onClick={() => setViewMode("preview")}>预览</button>
+            <button className={viewMode === "json" ? "active" : ""} onClick={() => setViewMode("json")}>JSON</button>
+            <button className={viewMode === "markdown" ? "active" : ""} onClick={() => setViewMode("markdown")}>MD</button>
+            <button className={viewMode === "mindmap" ? "active" : ""} onClick={() => setViewMode("mindmap")}>导图</button>
+          </div>
+          <div className="export-wrap">
+            <button className="btn-share" onClick={() => setShowExport(!showExport)}>导出</button>
+            {showExport && (
+              <div className="export-dropdown">
+                <div className="export-option" onClick={handleCopyLink}>🔗 复制链接</div>
+                <div className="export-option" onClick={handleExportMD}>📝 Markdown</div>
+                <div className="export-option" onClick={handleExportHTML}>🌐 HTML</div>
+                <div className="export-option" onClick={handleExportPNG}>🖼️ 图片</div>
+                <div className="export-option" onClick={handleCopyCitation}>📖 引用</div>
+              </div>
+            )}
+          </div>
+          {isPublished ? (
+            <span className="published-badge">已发布</span>
+          ) : (
+            <button className="btn-share" onClick={handlePublish} title="发布到展示馆">发布</button>
           )}
+          <button className="btn-share" onClick={handleShare}>分享</button>
+          {shareMsg && <span className="share-msg">{shareMsg}</span>}
         </div>
-        {isPublished ? (
-          <span className="published-badge">已发布</span>
-        ) : (
-          <button className="btn-share" onClick={handlePublish} title="发布到展示馆">
-            发布
-          </button>
-        )}
-        <button className="btn-share" onClick={handleShare}>
-          分享
-        </button>
-        {shareMsg && <span className="share-msg">{shareMsg}</span>}
       </div>
       <div className="output-content">
         {viewMode === "preview" && <ResultRenderer result={result} />}
