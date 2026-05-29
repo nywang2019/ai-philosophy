@@ -688,11 +688,12 @@ body {
 .output-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--light-border);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
 
 .output-title {
@@ -714,7 +715,7 @@ body {
 }
 
 .output-toggle button {
-  padding: 4px 12px;
+  padding: 4px 8px;
   border: none;
   background: var(--surface);
   color: var(--text);
