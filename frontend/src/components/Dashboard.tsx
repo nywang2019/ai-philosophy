@@ -107,7 +107,7 @@ const LineChart: React.FC<{ data: DailyStats[]; movingAvg?: number[] }> = ({ dat
     return `${x},${yFor(d.count)}`;
   }).join(" ");
 
-  const areaPath = `M${pad.l},${pad.t + ch} L${pts.replace(/(\d+\.?\d*),(\d+\.?\d*)/g, "$1,$2 L")} L${pad.l + cw},${pad.t + ch} Z`;
+  const areaPath = pts ? `M${pad.l},${pad.t + ch} L${pts.replace(/(\d+\.?\d*),(\d+\.?\d*)/g, "$1,$2 L")} L${pad.l + cw},${pad.t + ch} Z` : "";
 
   const maPts = movingAvg ? movingAvg.map((v, i) => {
     const x = pad.l + (i / Math.max(data.length - 1, 1)) * cw;
