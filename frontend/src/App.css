@@ -2266,20 +2266,21 @@ body {
 /* ===== Share button ===== */
 
 .btn-share {
-  background: none;
-  border: 1px solid var(--input-border);
-  padding: 4px 10px;
+  background: #ff0000 !important;
+  border: 2px solid #cc0000 !important;
+  padding: 6px 14px !important;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 11px;
-  color: var(--text-secondary);
+  font-size: 14px !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
   transition: all 0.15s;
 }
 
 .btn-share:hover {
-  background: var(--primary);
+  background: #cc0000 !important;
   color: #fff;
-  border-color: var(--primary);
+  border-color: #990000 !important;
 }
 
 .share-msg {
