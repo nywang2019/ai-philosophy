@@ -187,8 +187,6 @@ interface Props {
   onHistorySelect?: (entry: HistoryEntry) => void;
   onBackToHome?: () => void;
   onOpenHistory?: () => void;
-  batchResults?: { item: string; res: GenerateResult | null; err: string | null }[] | null;
-  batchProgress?: number;
   lastHistoryId?: string | null;
   showcaseRefreshKey?: number;
   onNoteChange?: () => void;
@@ -231,7 +229,7 @@ const WelcomeSidebar: React.FC<{ onSelect?: (entry: HistoryEntry) => void }> = (
   );
 };
 
-const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome, onOpenHistory, batchResults, batchProgress, lastHistoryId, onNoteChange, showcaseRefreshKey }) => {
+const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect, onBackToHome, onOpenHistory, lastHistoryId, onNoteChange, showcaseRefreshKey }) => {
   const [viewMode, setViewMode] = useState<ViewMode>(getStoredPrefs().defaultViewMode);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
@@ -397,33 +395,6 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
         <div className="output-error">
           <div className="error-title">生成失败</div>
           <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (batchResults && batchResults.length > 0) {
-    return (
-      <div className="output-panel">
-        <div className="output-header">
-          {onBackToHome && <button className="btn-back-home" onClick={onBackToHome} title="返回主页">&#8962;</button>}
-          <span className="output-title">批量生成结果</span>
-          <span className="output-duration">{batchProgress}/{batchResults.length}</span>
-        </div>
-        <div className="output-content">
-          <div className="batch-results">
-            {batchResults.map((br, i) => (
-              <div key={i} className={`batch-card ${br.res ? "done" : br.err ? "error" : "pending"}`}>
-                <div className="batch-card-num">{i + 1}</div>
-                <div className="batch-card-content">
-                  <div className="batch-card-item">{br.item}</div>
-                  {br.res && <ResultRenderer result={br.res} />}
-                  {br.err && <div className="output-error"><div className="error-title">失败</div><p>{br.err}</p></div>}
-                  {!br.res && !br.err && <div className="batch-card-waiting">等待生成...</div>}
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     );

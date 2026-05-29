@@ -7,7 +7,6 @@ import { getActiveProject } from "../services/projectStore";
 
 interface Props {
   config: ModuleConfig | null;
-  secondConfig?: ModuleConfig | null;
   onSubmit: (inputs: Record<string, unknown>) => void;
   loading: boolean;
   initialValues?: Record<string, unknown> | null;
@@ -126,7 +125,7 @@ const TagInput: React.FC<{
   );
 };
 
-const InputPanel: React.FC<Props> = ({ config, secondConfig, onSubmit, loading, initialValues }) => {
+const InputPanel: React.FC<Props> = ({ config, onSubmit, loading, initialValues }) => {
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [tagValues, setTagValues] = useState<Record<string, string[]>>({});
 
