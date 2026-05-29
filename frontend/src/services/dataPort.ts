@@ -45,11 +45,19 @@ export function importHistory(jsonStr: string): { success: boolean; error?: stri
     return { success: false, error: "文件中没有找到历史会话数据", count: 0 };
   }
 
-  // 安全：导入后恢复当前 apiKey（从localStorage读取）
-  const currentConfig = localStorage.getItem("ai-philosophy-llm-config");
+  // 安全：导入后恢复当前 apiKey（从localStorage读取，兼容新旧格式）
   let currentApiKey = "";
-  if (currentConfig) {
-    try { currentApiKey = JSON.parse(currentConfig).apiKey || ""; } catch { /* ignore */ }
+  try {
+    const activeId = localStorage.getItem("ai-philosophy-active-llm-id");
+    const configs = JSON.parse(localStorage.getItem("ai-philosophy-llm-configs") || "[]");
+    const active = activeId ? configs.find((c: { id: string }) => c.id === activeId) : configs[0];
+    if (active) currentApiKey = active.apiKey || "";
+  } catch { /* ignore */ }
+  if (!currentApiKey) {
+    try {
+      const saved = localStorage.getItem("ai-philosophy-llm-config");
+      if (saved) currentApiKey = JSON.parse(saved).apiKey || "";
+    } catch { /* ignore */ }
   }
   if (currentApiKey) {
     for (const e of data.history) {
