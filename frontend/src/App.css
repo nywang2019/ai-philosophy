@@ -400,8 +400,9 @@ body {
 
 .output-note {
   margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--light-border);
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--tag-accent-bg);
 }
 
 .output-note-header {
@@ -424,7 +425,7 @@ body {
   border-radius: 8px;
   font-size: 12px;
   font-family: inherit;
-  background: var(--code-bg);
+  background: var(--surface);
   color: var(--text);
   resize: vertical;
   min-height: 60px;
