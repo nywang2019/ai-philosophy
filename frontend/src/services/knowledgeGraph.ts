@@ -78,7 +78,7 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
   // 取Top 15高频词作为实体
   const topWords = [...freqMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15);
   for (const [w, c] of topWords) {
-    if (!entityMap.has(w) && c >= 2) {
+    if (!entityMap.has(w) && c >= 1) {
       entityMap.set(w, { id: w, name: w, category: "concept", count: c, sessionIds: [] });
       for (const e of all) {
         if (JSON.stringify(e.inputs).includes(w)) {
@@ -89,7 +89,7 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
     }
   }
 
-  const entities = [...entityMap.values()].filter(e => e.count >= 2);
+  const entities = [...entityMap.values()].filter(e => e.count >= 1);
 
   // 构建边（共现关系）
   const edgeMap = new Map<string, number>();
@@ -104,7 +104,7 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
   }
 
   const edges: GraphEdge[] = [...edgeMap.entries()]
-    .filter(([, w]) => w >= 2)
+    .filter(([, w]) => w >= 1)
     .map(([key, weight]) => {
       const [s, t] = key.split("|||");
       return { source: s, target: t, weight };
