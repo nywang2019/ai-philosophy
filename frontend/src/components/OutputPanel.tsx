@@ -535,11 +535,9 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
             导图
           </button>
         </div>
-      </div>
-      <div className="output-actions">
         <div className="export-wrap">
-          <button className="btn-action" onClick={() => setShowExport(!showExport)}>
-            📤 导出
+          <button className="btn-share" onClick={() => setShowExport(!showExport)}>
+            导出
           </button>
           {showExport && (
             <div className="export-dropdown">
@@ -552,14 +550,14 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
           )}
         </div>
         {isPublished ? (
-          <span className="published-badge">✅ 已发布到展馆</span>
+          <span className="published-badge">已发布</span>
         ) : (
-          <button className="btn-action" onClick={handlePublish} title="发布到展示馆">
-            🎨 发布
+          <button className="btn-share" onClick={handlePublish} title="发布到展示馆">
+            发布
           </button>
         )}
-        <button className="btn-action" onClick={handleShare}>
-          🔗 分享
+        <button className="btn-share" onClick={handleShare}>
+          分享
         </button>
         {shareMsg && <span className="share-msg">{shareMsg}</span>}
       </div>
