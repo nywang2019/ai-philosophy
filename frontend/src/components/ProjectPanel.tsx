@@ -83,19 +83,18 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--light-border)", display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button className="btn-save-prompt" onClick={() => { setViewSessions(null); load(); }}>返回项目列表</button>
             <button className="btn-save-prompt" style={{ background: "linear-gradient(135deg, #7c3aed, #4a6cf7)" }} onClick={async () => {
-              const cfg = localStorage.getItem("ai-philosophy-llm-config");
+              const activeId = localStorage.getItem("ai-philosophy-active-llm-id");
+              const configs = JSON.parse(localStorage.getItem("ai-philosophy-llm-configs") || "[]");
+              const cfg = activeId ? configs.find((c: { id: string }) => c.id === activeId) : configs[0];
               if (!cfg) { showMsg("请先配置API"); return; }
-              const config = JSON.parse(cfg);
               setSummaryLoading(true);
               const content = sessions.map((s, i) => `[${i+1}] 模块:${s.moduleName} 标题:${s.title}\n输入:${JSON.stringify(s.inputs)}\n结果:${JSON.stringify(s.result).slice(0, 800)}`).join("\n\n");
               const prompt = `你是一位学术研究综述专家。以下是研究项目"${viewSessions.name}"下的${sessions.length}条会话记录。请撰写一篇200-300字的综合研究综述，要求：1）识别核心主题和子主题 2）指出各会话间的逻辑关联 3）发现值得深入的方向 4）语言精炼，有学术洞察力。\n\n${content}`;
               try {
-                const r = await fetch("/api/generate", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ moduleId:"summary", inputs:{}, llmConfig:config, customPrompt:prompt }) });
-                const d = await r.json();
-                if (d.error) { showMsg("生成失败: "+d.error); } else {
-                  const text = (d.result as Record<string,unknown>).raw as string || JSON.stringify(d.result);
-                  saveProjectSummary(viewSessions.id, text + `\n\n生成时间：${new Date().toLocaleString("zh-CN")}`);
-                }
+                const { generate } = await import("../api/client");
+                const result = await generate({ moduleId: "summary", inputs: {}, llmConfig: { endpoint: cfg.endpoint, apiKey: cfg.apiKey, model: cfg.model }, customPrompt: prompt });
+                const text = (result.result as Record<string,unknown>).raw as string || JSON.stringify(result.result);
+                saveProjectSummary(viewSessions.id, text + `\n\n生成时间：${new Date().toLocaleString("zh-CN")}`);
               } catch(e) { showMsg("生成失败"); }
               setSummaryLoading(false);
             }}>{summaryLoading ? "生成中..." : "🔮 生成综述"}</button>
