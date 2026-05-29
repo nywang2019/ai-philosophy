@@ -447,8 +447,15 @@ const Dashboard: React.FC<{ onHistorySelect?: (entry: HistoryEntry) => void; onV
 
   const loadConfig = (): LLMConfig | null => {
     try {
-      const s = localStorage.getItem("ai-philosophy-llm-config");
-      if (s) return JSON.parse(s) as LLMConfig;
+      const activeId = localStorage.getItem("ai-philosophy-active-llm-id");
+      const configs = JSON.parse(localStorage.getItem("ai-philosophy-llm-configs") || "[]");
+      const active = activeId ? configs.find((c: { id: string }) => c.id === activeId) : configs[0];
+      if (active) return { endpoint: active.endpoint, apiKey: active.apiKey, model: active.model };
+    } catch { /* ignore */ }
+    // 降级：旧格式
+    try {
+      const saved = localStorage.getItem("ai-philosophy-llm-config");
+      if (saved) return JSON.parse(saved) as LLMConfig;
     } catch { /* ignore */ }
     return null;
   };
