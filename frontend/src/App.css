@@ -705,6 +705,14 @@ body {
   color: var(--muted);
 }
 
+.output-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .output-toggle {
   display: flex;
   border: 1px solid var(--input-border);
