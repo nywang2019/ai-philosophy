@@ -533,9 +533,6 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
             导图
           </button>
         </div>
-        <div style={{ background: "#00cc00", color: "#fff", padding: "4px 10px", borderRadius: 4, fontSize: 14, fontWeight: 700, display: "inline-block", marginRight: 8 }}>
-          DEBUG: 按钮区域
-        </div>
         <div className="export-wrap">
           <button className="btn-share" onClick={() => setShowExport(!showExport)}>
             导出

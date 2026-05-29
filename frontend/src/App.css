@@ -692,8 +692,7 @@ body {
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--light-border);
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  flex-wrap: wrap;
 }
 
 .output-title {
@@ -711,6 +710,7 @@ body {
   border: 1px solid var(--input-border);
   border-radius: 4px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .output-toggle button {
@@ -2266,21 +2266,21 @@ body {
 /* ===== Share button ===== */
 
 .btn-share {
-  background: #ff0000 !important;
-  border: 2px solid #cc0000 !important;
-  padding: 6px 14px !important;
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  padding: 4px 10px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px !important;
-  color: #ffffff !important;
-  font-weight: 700 !important;
+  font-size: 12px;
+  color: var(--primary);
   transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn-share:hover {
-  background: #cc0000 !important;
+  background: var(--primary);
   color: #fff;
-  border-color: #990000 !important;
 }
 
 .share-msg {
@@ -2337,6 +2337,7 @@ body {
 
 .export-wrap {
   position: relative;
+  flex-shrink: 0;
 }
 
 .export-dropdown {
