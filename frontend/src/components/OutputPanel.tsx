@@ -507,8 +507,6 @@ const OutputPanel: React.FC<Props> = ({ result, error, loading, onHistorySelect,
           </button>
         )}
         <span className="output-title">{result.moduleName}</span>
-        <span className="output-duration">耗时: {result.duration}ms</span>
-        {result.usage?.totalTokens && <span className="output-duration">Token: {(result.usage.totalTokens / 1000).toFixed(1)}k</span>}
         <div className="output-toggle">
           <button
             className={viewMode === "preview" ? "active" : ""}
