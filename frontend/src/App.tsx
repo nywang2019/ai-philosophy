@@ -274,7 +274,7 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>文史哲AI多模块生成系统</h1>
+        <h1>🥔 土豆AI</h1>
         <div className="header-actions">
           {llmConfig && <span className="config-status">{llmConfig.model}</span>}
           <span className="config-status">会话总次数：{headerStats.total}</span>

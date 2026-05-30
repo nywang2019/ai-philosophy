@@ -137,7 +137,7 @@ body {
 
 .module-item-name {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   margin-bottom: 2px;
   display: flex;
   align-items: center;
@@ -145,7 +145,7 @@ body {
 }
 
 .module-icon {
-  font-size: 14px;
+  font-size: 13px;
   flex-shrink: 0;
 }
 
