@@ -1,5 +1,47 @@
 # 开发日志
 
+## 2026-05-30 - v13.0 品牌升级 + 部署上线 + 交互优化 + Bug 修复
+
+### 修改文件
+- `frontend/src/App.tsx` — 标题改为🥔土豆AI，删除对比/批量模式全部代码，未配置API时给出提示
+- `frontend/src/App.css` — 模块列表行距紧凑、字号缩小，输出按钮防flex压缩，笔记区浅蓝背景
+- `frontend/src/components/InputPanel.tsx` — 删除compareMode/batchMode相关props和UI
+- `frontend/src/components/OutputPanel.tsx` — 删除耗时/Token显示，7个按钮右对齐排列
+- `frontend/src/components/ModuleList.tsx` — 删除secondSelectedId
+- `frontend/src/components/Dashboard.tsx` — AI洞察适配多模型配置格式，SVG空数据修复
+- `frontend/src/components/ProjectPanel.tsx` — 综述生成改用前端generate()，查看综述按钮常显
+- `frontend/src/components/CustomModulePanel.tsx` — 新增纯文本/多模态预设提示词模板
+- `frontend/src/components/ImageManager.tsx` — 查看原图加载原始图片
+- `frontend/src/components/KnowledgeGraph.tsx` — 阈值降至1
+- `frontend/src/services/knowledgeGraph.ts` — 实体/词频/边权阈值从2降至1
+- `frontend/src/services/imageStore.ts` — 双版本存储（originalData + data）
+- `frontend/src/services/historyStore.ts` — autoTitle跳过图片ID加📷标识
+- `frontend/src/services/dataPort.ts` — 导入恢复适配多模型配置
+- `frontend/src/api/client.ts` — deploy分支重写为直接调LLM API
+- `frontend/src/services/llmService.ts` — 从后端复制，浏览器直接fetch调LLM
+- `frontend/src/services/promptTemplates.ts` — 从后端复制，localStorage管理提示词覆盖
+- `frontend/vite.config.ts` — deploy分支移除/api代理
+- `frontend/index.html` — 标题改为🥔土豆AI
+- `CHANGELOG.md` — v13.0更新日志
+- `README.md` — v13.0版本号，土豆AI标题，删除对比/批量描述
+- `TEST.md` — v13.0新增部署、品牌UI测试，删除对比/批量测试
+- `devlog.md` — v13.0条目
+
+### 修改内容
+参见 CHANGELOG.md v13.0 条目
+
+### 风险
+- deploy分支前端直接调LLM API，浏览器需支持fetch且API需允许CORS
+- 图片UI缩略图用压缩版显示，可能与原图视觉略有差异
+
+### 未完成项
+- 无
+
+### 下一步建议
+继续按用户需求迭代
+
+---
+
 ## 2026-05-25 - v12.0 全文搜索高亮 + 多模态视觉 + 展馆系统 + 多模型配置 + 数据全量同步
 
 ### 修改文件
