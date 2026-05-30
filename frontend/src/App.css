@@ -120,7 +120,7 @@ body {
 }
 
 .module-item {
-  padding: 8px 16px;
+  padding: 5px 16px;
   cursor: pointer;
   border-left: 3px solid transparent;
   transition: background 0.15s;
