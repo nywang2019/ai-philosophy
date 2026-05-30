@@ -2275,6 +2275,8 @@ body {
 /* ===== Share button ===== */
 
 .btn-share {
+  display: inline-flex !important;
+  align-items: center;
   background: var(--surface);
   border: 1px solid var(--primary);
   padding: 4px 10px;
