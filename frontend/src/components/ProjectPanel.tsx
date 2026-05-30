@@ -105,7 +105,7 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
               a.href = URL.createObjectURL(blob);
               a.download = `${viewSessions.name}-研究文档.md`;
               document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            }}>📄 导出文档</button>
+            }}>📄 导出项目文档</button>
           </div>
           <div style={{ padding: "8px 16px", fontSize: 13, color: "var(--text-secondary)" }}>
             已关联 {sessions.length} 条会话
@@ -187,10 +187,8 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button className="btn-save-prompt" onClick={() => handleViewSessions(p)}>进入会话</button>
-                  {p.summary && (
-                    <button className="btn-save-prompt" style={{ background: "linear-gradient(135deg, #7c3aed, #4a6cf7)" }}
-                      onClick={() => setViewSummaryId(viewSummaryId === p.id ? null : p.id)}>查看综述</button>
-                  )}
+                  <button className="btn-save-prompt" style={p.summary ? { background: "linear-gradient(135deg, #7c3aed, #4a6cf7)" } : { opacity: 0.5 }}
+                    onClick={() => { if (p.summary) setViewSummaryId(viewSummaryId === p.id ? null : p.id); }}>查看综述</button>
                   {activeId !== p.id ? (
                     <button className="btn-save-prompt" onClick={() => handleSetActive(p.id)}>设为活跃</button>
                   ) : null}
