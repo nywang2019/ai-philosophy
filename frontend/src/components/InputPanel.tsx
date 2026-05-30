@@ -160,7 +160,7 @@ const InputPanel: React.FC<Props> = ({ config, onSubmit, loading, initialValues 
     return (
       <div className="input-panel">
         <div className="welcome-panel">
-          <h2 className="welcome-title">文史哲AI多模块生成系统</h2>
+          <h2 className="welcome-title">🥔 土豆AI</h2>
           <WelcomeAnimation />
           <p className="welcome-desc">请从左侧模块列表中选择一个，开始你的思想实验。</p>
         </div>
