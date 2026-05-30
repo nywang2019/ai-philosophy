@@ -86,7 +86,7 @@ body {
   padding: 4px 14px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
 }
 
@@ -137,7 +137,7 @@ body {
 
 .module-item-name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   margin-bottom: 2px;
   display: flex;
   align-items: center;
@@ -145,7 +145,7 @@ body {
 }
 
 .module-icon {
-  font-size: 15px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
