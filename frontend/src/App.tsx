@@ -169,7 +169,8 @@ const App: React.FC = () => {
 
   const handleSubmit = useCallback(
     async (inputs: Record<string, unknown>) => {
-      if (!selectedModule || !llmConfig) return;
+      if (!selectedModule) return;
+      if (!llmConfig) { setError("请先在设置中配置API信息"); return; }
 
       // 批量模式
       setLoading(true);
