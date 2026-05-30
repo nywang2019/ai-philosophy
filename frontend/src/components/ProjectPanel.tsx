@@ -94,7 +94,9 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
                 const { generate } = await import("../api/client");
                 const result = await generate({ moduleId: "summary", inputs: {}, llmConfig: { endpoint: cfg.endpoint, apiKey: cfg.apiKey, model: cfg.model }, customPrompt: prompt });
                 const text = (result.result as Record<string,unknown>).raw as string || JSON.stringify(result.result);
-                saveProjectSummary(viewSessions.id, text + `\n\n生成时间：${new Date().toLocaleString("zh-CN")}`);
+                const summaryText = text + `\n\n生成时间：${new Date().toLocaleString("zh-CN")}`;
+                saveProjectSummary(viewSessions.id, summaryText);
+                setViewSessions(prev => prev ? { ...prev, summary: summaryText } : prev);
               } catch(e) { showMsg("生成失败"); }
               setSummaryLoading(false);
             }}>{summaryLoading ? "生成中..." : "🔮 生成综述"}</button>
