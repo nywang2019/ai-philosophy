@@ -98,6 +98,10 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
               } catch(e) { showMsg("生成失败"); }
               setSummaryLoading(false);
             }}>{summaryLoading ? "生成中..." : "🔮 生成综述"}</button>
+            {viewSessions.summary && (
+              <button className="btn-save-prompt" style={viewSummaryId === viewSessions.id ? { background: "var(--primary)", color: "#fff" } : {}}
+                onClick={() => setViewSummaryId(viewSummaryId === viewSessions.id ? null : viewSessions.id)}>查看综述</button>
+            )}
             <button className="btn-save-prompt" style={{ background: "linear-gradient(135deg, #389e0d, #4caf50)" }} onClick={() => {
               const md = generateProjectDoc(viewSessions, sessions);
               const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
@@ -107,6 +111,11 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
               document.body.appendChild(a); a.click(); document.body.removeChild(a);
             }}>📄 导出项目文档</button>
           </div>
+          {viewSummaryId === viewSessions.id && viewSessions.summary && (
+            <div style={{ margin: "0 16px 8px", padding: "10px 12px", background: "var(--code-bg)", borderRadius: 8, fontSize: 13, lineHeight: 1.8, color: "var(--text)", whiteSpace: "pre-wrap" }}>
+              {viewSessions.summary}
+            </div>
+          )}
           <div style={{ padding: "8px 16px", fontSize: 13, color: "var(--text-secondary)" }}>
             已关联 {sessions.length} 条会话
           </div>
