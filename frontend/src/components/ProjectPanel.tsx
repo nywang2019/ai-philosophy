@@ -185,14 +185,14 @@ const ProjectPanel: React.FC<Props> = ({ visible, onClose, onProjectChange }) =>
                   </div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{p.description}</div>
                 </div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button className="btn-save-prompt" onClick={() => handleViewSessions(p)}>进入会话</button>
-                  <button className="btn-save-prompt" style={p.summary ? { background: "linear-gradient(135deg, #7c3aed, #4a6cf7)" } : { opacity: 0.5 }}
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  <button className="btn-save-prompt" style={{ flexShrink: 0, whiteSpace: "nowrap" }} onClick={() => handleViewSessions(p)}>进入会话</button>
+                  <button className="btn-save-prompt" style={{ flexShrink: 0, whiteSpace: "nowrap", ...(p.summary ? { background: "linear-gradient(135deg, #7c3aed, #4a6cf7)" } : { opacity: 0.5 }) }}
                     onClick={() => { if (p.summary) setViewSummaryId(viewSummaryId === p.id ? null : p.id); }}>查看综述</button>
                   {activeId !== p.id ? (
-                    <button className="btn-save-prompt" onClick={() => handleSetActive(p.id)}>设为活跃</button>
+                    <button className="btn-save-prompt" style={{ flexShrink: 0, whiteSpace: "nowrap" }} onClick={() => handleSetActive(p.id)}>设为活跃</button>
                   ) : null}
-                  <button className="btn-reset" onClick={() => handleDelete(p.id)}>删除</button>
+                  <button className="btn-reset" style={{ flexShrink: 0, whiteSpace: "nowrap" }} onClick={() => handleDelete(p.id)}>删除</button>
                 </div>
               </div>
               {viewSummaryId === p.id && p.summary && (
